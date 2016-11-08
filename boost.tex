@@ -15,9 +15,9 @@ The algorithm re-weights the dataset after each round. Initially, all weights ar
 
 Formally, the AdaBoost algorithm~\cite{freund1995desicion} proceeds as follows:
 \begin{algorithm}
-\KwData{(X, Y), $\alpha$}\\
+\KwData{(X, Y), $\alpha$}
 Initialize $W^{(1)}_i = \frac{1}{N}$\\
-\For{t \in [1, T]}{
+\For{$t \in [1, T]$}{
   $C_t$ = Train weak learner on dataset weighed by $W^{t}_i$ 
   $W^{(t+1)}_i \propto W^{(t)}_i e^{-\alpha y_i C_t(x_i)}$: down-weigh correct predictions, up-weigh incorrectly predictions.
 }
