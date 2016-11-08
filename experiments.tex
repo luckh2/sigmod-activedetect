@@ -24,6 +24,9 @@ In all of our experiments, we used standard classification models and featurizat
 The classifiers were trained in Python 2.7 and timing experiments were run on an Amazon EC2 m4.16xlarge instance\footnote{64 virtual cpus and 256 GiB memory}.
 To avoid overfitting, we carefully designed the accuracy evaluation experiments for \sys.
 We use a ``doubly'' held out test dataset to address this problem, i.e., the test dataset that we use to optimize \sys is different from a completely unseen test dataset which is used to evaluate prediction accuracy.
+W 
+
+To define the user-specified classifier, we user a Python \textsf{sklearn} Random Forest with problem specific h
 
 \subsection{ML Competition Datasets}
 We downloaded 8 ML datasets used in Kaggle competitions and benchmarks in the UCI ML repository. The datasets are described below with brief descriptions and a description of the data errors:
