@@ -1,5 +1,4 @@
-\section{The Data Cleaning Library}
- In this section, we describe the architecture and API of the data cleaning library. 
+\section{The \sys System}\label{s:arch}
  
 \begin{figure}[h]
 \centering
@@ -8,16 +7,23 @@
 \label{f:arch}
 \end{figure}
 
-\subsection{Architecture}
-The architecture of \sys includes three high-level components: (1) a loader, (2) error detector, and (3) repair action selector.
-The loader takes in a weakly structured dataset (e.g., a CSV file) parses the file and returns a relation over a set of attributes and associated data types with each attribute.
-Then, this relation is passed into an error detector.
-The error detector identifies a candidate set of erroneous records and taxonomizes them into group of violated constraints.
-Finally, associated with each of the violated constraint are repair actions (described in Section 3).
-This modular architecture allows us to build a large number of library components, where users can specify additional rules for error detection without having to specify repair actions.
-This section will overview the architecture of each of the components (including error detection) and the next section will go into the implementation details of the error detection module.
+% \subsection{Architecture Overview}
+Figure~\ref{f:arch} depicts the primary components of the system architecture. The \blue{blue} components manage the detection and repair libraries while the \orange{orange} components execute the Boost-and-Clean algorithm to generate the sequence of conditional repairs $\mathcal{L}^*$.  As described below, \sys is pre-populated with a library of detector generators and repair functions that work well in practice (Section~\ref{s:exp}).  However, by separating the two libraries, users are ablo to specify custom detection or repair rules that fit their domain.
 
-\subsection{Error Detection}
+To generate $\mathcal{L}^*$, \sys takes as input training and test datasets, where the only restriction is that the test labels are correct.  It executes the detector generators on the training data to create a set of predicates which, along side the repair functions, are sent to the {\it Boost-and-Clean component}.  This component iteratively selects the next conditional repair by appending it to the sequence of repairs so far, training a new classifier using the sequence and evaluating it using the {\it Test Accuracy Evaluator}.  Below, we describe each component in more details, as well as the programming API for the system.
+
+\iffalse
+    The architecture of \sys includes three high-level components: (1) a loader, (2) error detector, and (3) repair action selector.
+    The loader takes in a weakly structured dataset (e.g., a CSV file) parses the file and returns a relation over a set of attributes and associated data types with each attribute.
+    Then, this relation is passed into an error detector.
+    The error detector identifies a candidate set of erroneous records and taxonomizes them into group of violated constraints.
+    Finally, associated with each of the violated constraint are repair actions (described in Section 3).
+    This modular architecture allows us to build a large number of library components, where users can specify additional rules for error detection without having to specify repair actions.
+    This section will overview the architecture of each of the components (including error detection) and the next section will go into the implementation details of the error detection module.
+\fi
+
+
+\subsection{Detector Selector}
 We noticed that many derived rules follow a similar structure.
 First, they convert a row into a feature vector (in the above example, trivially projecting onto $num\_employees$).
 Next, they apply a threshold (possibly multi-dimensional) on the feature vector.

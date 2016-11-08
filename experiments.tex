@@ -1,4 +1,4 @@
-\section{Experiments}
+\section{Experiments}\label{s:exp}
 In this section, we present the results of our experiments.
 We first describe end-to-end use cases of \sys measuring accuracy and end-to-end runtime.
 Then, we present a series of micro-benchmarks that evaluate each of the modules of \sys.
@@ -36,11 +36,37 @@ We looked at three classes of data: ML Competition Datasets, Data Analysis Scena
 
 \subsection{ML Competition Datasets}
 We downloaded 8 ML datasets used in Kaggle competitions and benchmarks in the UCI ML repository. 
+Each of the examples was a binary classification dataset.
 These datasets are mostly clean as they have been extracted, structured, and published.
 Nevertheless, they contain missing values, numerical outliers, and pattern errors (oddly formatted values).
+For this set of experiments, we used a single hyper-parameter setting for all the detectors and classification models (default \textsf{sklearn} library setting).
+
 The datasets are described below with brief descriptions and a description of the data errors:
 
-\vspace{0.5em}
+\vspace{0.5em}\noindent\textbf{USCensus: } This dataset contains US Census records for adults and the goal is to predict from features whether the adult earns more than $50,000$ dollars. It contains 32,561 records with 15 numerical and categorical attributes. Examples of data error include:
+\begin{lstlisting}
+#missing values
+40,Private,121772,Assoc-voc,11,
+Married-civ-spouse,Craft-repair,Husband, 
+Asian-Pac-Islander,Male,0,0,40,(*\orange{\bf{?}}*),>50K
+
+#coding inconsistency
+57,Local-gov,110417,HS-grad,9,
+Married-civ-spouse,Craft-repair,Husband,
+White,Male,(*\orange{\bf{99999}}*),0,40,United-States,>50K
+\end{lstlisting}
+
+\vspace{0.5em}\noindent\textbf{NFL: } This dataset contains play-by-play logs from US Football games. The dataset contains 46,129 records with 65 numerical, categorical, and string-valued attributes. Given the current clock time, 
+
+\vspace{0.5em}\noindent\textbf{Emergency: }
+
+\vspace{0.5em}\noindent\textbf{Sensor: }
+
+\vspace{0.5em}\noindent\textbf{Titanic: }
+
+\vspace{0.5em}\noindent\textbf{Housing: }
+
+\vspace{0.5em}\noindent\textbf{Retail: }
 
 \reminder{TODO Write Description}
 
