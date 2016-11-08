@@ -1,0 +1,27 @@
+\section{Related Work}
+There is a growing body of literature that studies analysis-driven data cleaning, that is, applying data cleaning in a sufficient way to answer a given query.
+For example, Altwaijry et al.~\cite{altwaijry2015query} describe a technique for resolving a sufficient subset of entities in a database to answer SPJ queries.
+Bergman et al. \cite{DBLP:conf/sigmod/BergmanMNT15} proposed identifying errors in selection query results and generating crowd-scoured queries to determine fixes to the base data.
+Similarly, work on the consistent query answering problem explored the minimal effort needed to answer a query given a set of integrity constraints over a dirty relation~\cite{DBLP:series/synthesis/2011Bertossi}.
+
+While the work on relational queries is extensive, analytical queries (aggregates, advanced statistical analytics, learning etc.) is less studied.
+Projects like ActiveClean~\cite{DBLP:journals/pvldb/KrishnanWWFG16} have studied algorithms for prioritizing user-defined cleaning using the downstream ML model, ActiveClean does not actually clean the data--it only decides where to apply a predefined operation.
+\sys studies an extension where the cleaning operations can be selected from a discrete set given a clean test dataset (can be much smaller) to evaluate the user's analytics.
+This approach promises to significantly reduce the effort in designing cleaning software since the time-consuming trial-and-error development process is automated.
+
+Furthermore, there are alternative ensembling approaches that could be considered like Multi-Arm Bandits~\cite{bubeck2013multiple}. 
+In our particular problem statement, we assume a fixed test set.
+This means that the problem is deterministic unlike the bandit setting.
+Furthermore, we are interested in selecting a subset that jointly maximizes prediction accuracy and not a top-k.
+We hope to explore this avenue in the future and this might be promising for ``weak'' accuracy metrics.
+
+There are a number of other works that use machine learning to improve the efficiency and/or reliability of data cleaning~\cite{DBLP:journals/pvldb/YakoutENOI11,yakout2013don,gokhale2014corleone}.
+For example, Yakout et al. train a model that evaluates the likelihood of a proposed replacement value \cite{yakout2013don}.
+Another application of machine learning is value imputation, where a missing value is predicted based on those records without missing values.
+Machine learning is also increasingly applied to make automated repairs more reliable with human validation \cite{DBLP:journals/pvldb/YakoutENOI11}.
+Human input is often expensive and impractical to apply to entire large datasets.
+Machine learning can extrapolate rules from a small set of examples cleaned by a human (or humans) to uncleaned data \cite{gokhale2014corleone, DBLP:journals/pvldb/YakoutENOI11}.
+This approach can be coupled with active learning \cite{DBLP:journals/pvldb/MozafariSFJM14} to learn an accurate model with the fewest possible number of examples.
+While, in spirit, \sys is similar to these approaches, it addresses a very different problem of data cleaning optimization for user-defined ML-based analytics.
+
+

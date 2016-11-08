@@ -1,0 +1,94 @@
+\section{Boost-and-Clean}
+The key insight of this paper is that the problem described in Section 3.3 can be addressed with statistical boosting.
+
+\subsection{Overview of Boosting}
+Ensemble methods construct predictions from combinations of predictors.
+Boosting, a type of ensembling, is based on the observation that finding many ``weak learners'' is often significantly easier than finding a single, highly accurate predictor. 
+The boosting algorithm calls this ``weak'' or ``base'' learning algorithm repeatedly feeding it a  weighting over the training examples.
+Each time it is called, the base learning algorithm generates a new weak prediction rule, and after many rounds, the boosting algorithm must combine these weak learners into a single prediction rule that, hopefully, will be much more accurate than any one of the weak learners.
+
+We will first introduce the classical AdaBoost algorithm for binary classifiers.
+This is without a loss of generality since we can use an all-versus-one technique to handle multi-class classification.
+The algorithm takes as input a training set of features and labels $(X,Y)$--assume that the labels are $\{-1, 1\}$.
+AdaBoost calls a given weak learner repeatedly in a series of rounds. 
+The algorithm re-weights the dataset after each round. Initially, all weights are set equally, but on each round, the weights of incorrectly classified examples are increased so that the learner is forced to focus on the hard examples in the training set.
+
+Formally, the AdaBoost algorithm~\cite{freund1995desicion} proceeds as follows:
+\begin{algorithm}
+\KwData{(X, Y), $\alpha$}\\
+Initialize $W^{(1)}_i = \frac{1}{N}$\\
+\For{t \in [1, T]}{
+  $C_t$ = Train weak learner on dataset weighed by $W^{t}_i$ 
+  $W^{(t+1)}_i \propto W^{(t)}_i e^{-\alpha y_i C_t(x_i)}$: down-weigh correct predictions, up-weigh incorrectly predictions.
+}
+\Return $C(x) = \text{sign}(\sum_t^T \alpha C_t(x) )$
+\caption{AdaBoost Algorithm}
+\label{alg:adaboost}
+\end{algorithm}
+
+\subsection{Why Boosting?}
+Each of the library elements define a weak learner.
+Given the dataset $R$, we can apply $l_i(R)$ and then train the base classifier $C$. 
+The weak learners are evaluated on the clean test labels, which dictates weighting.
+Modeling the selecting process as a statistical boosting allows us to make relatively few assumptions about the classifier and the data cleaning operations. 
+Instead of having to reason about composing different data cleaning operations (and how compositions may affect accuracy), we are reasoning about a weighted consensus of classifiers trained with different data cleaning approaches.
+
+Furthermore, there is a subtle relationship between this process and feature selection.
+Another approach could be to materialize each $l_i(R)$ as another set of features for the classifier and train across the entire library.
+This approach makes an assumption that each $l_i$ is simply a row-by-row transformations and cannot discard data or correct a label.
+
+\subsection{Boost-and-Clean Algorithm}
+The boosting algorithm proceeds as follows.
+Find the $l_i \in \mathcal{L}$ that generates the classifier with highest test accuracy.
+Repeat until $B$ cleaning operations are selected, by selecting the operation that performs best on the current ensembles mispredictions and so on.
+The result is a new classifier $C_{clean}$ that is derived from the ensemble.
+
+As before, without loss of generality we present the binary classification case with labels in $\{-1,1\}$.
+\begin{enumerate}
+    \item \textbf{Given (1): } Given the library $\mathcal{L}$ it generates a set of classifiers $\{C^{(0)}, C^{(1)},...,C^{(k)}\}$ where $C^{(0)}$ is the base classifier and $C^{(1)},...,C^{(k)}$ are derived from the cleaning operations.
+    \item \textbf{Given (2): } The evaluation dataset $(F_{test}, P_{test})$ with N tuples.
+    \item \textbf{Initialize: } $W^{(1)}_i = \frac{1}{N}$
+    \item \textbf{For each } $t \in \{1,...,B\}$ 
+    \begin{enumerate}
+    \item For each $C$ calculate: \[\phi = \sum_i^N = W^{(t)}_i (C(f_i) == p_i)\]
+    Select the classifier $j$ with the highest value of $\phi$, denote this as $C_t$.
+    \item $W^{(t+1)}_i \propto W^{(t)}_i e^{-\alpha y_i C_t(x_i)}$, which down-weights correctly predicted points and up-weights incorrectly predicted tuples.
+    \end{enumerate}
+    \item \textbf{Return: } $C(x) = \text{sign}(\sum_t^B \alpha C_t(x) )$  
+\end{enumerate}
+
+The intuition for the algorithm is that it focuses every subsequent cleaning operation on the mis-predictions of the current best ensemble.
+The algorithm has a few intuitive properties: (1) it prioritizes cleaning operations that improve performance, (2) if no such operations exist it does no worse than the base classifier, and (3) it is agnostic to the implementation of the classifiers.
+
+The basic runtime of the algorithm is polynomial in both the number of cleaning operations and size of the dataset. In the next subsection, we will describe optimizations.
+
+\begin{proposition}[Time Complexity]
+The time complexity of Boost-and-Clean is $\mathbf{O}(k^2 N_{test} + k N_{train})$, where $k$ is the number of data cleaning operations, $N_{test}$ is the number of test tuples, and $N_{train}$ is the number of training tuples.
+\end{proposition}
+
+Boosting is well-understood statistically, and we can further bound the error on our clean test set (follows from~\cite{schapire2003boosting}):
+
+\begin{proposition}[Error Bound]
+For a budget of $B$ cleaning operations, the error rate of Boost-and-Clean on the test dataset decreases as $\mathbf{O}(e^{-2B})$.
+\end{proposition}
+
+
+\subsection{Optimizations and Parallelism}
+There are few optimizations that we can apply to make this 
+boosting algorithm performant. For these optimizations, we assume that the test dataset fits in memory on a single-node.
+
+\vspace{0.25em}\noindent\textbf{Up-front Materialization: } The first observation is that between iterations the cleaning operations actions do not change--only the way that we score the accuracy. So before running step 4 of the algorithm, we can materialize each of the classifiers predictions on the entire test dataset.
+This means for each $f \in F_{test}$, calculate $C_i(f)$ up-front and store it in memory.
+
+\vspace{0.25em}\noindent\textbf{Indexing: } Since we focus on classification, scoring each classifier can be made very efficient with an inverted index.
+For each $j$ in the output domain of the classifier $C$, we store an index $j \mapsto \{f : C_i(f) == j\}$.
+This allows us to efficiently query the set of points in each round that are mispredicted and correctly predicted.
+
+\vspace{0.25em}\noindent\textbf{Parallelism: }
+In Step 4a the algorithm iterates through the list of classifiers, scores each one on the weighted test dataset, and takes the maximum.
+This step is embarrassingly parallel and we run each scoring iteration in a separate thread.
+
+
+
+
+

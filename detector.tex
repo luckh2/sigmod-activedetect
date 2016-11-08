@@ -1,0 +1,62 @@
+\section{Pre-populated Detectors}
+We initialized the error detection module with defined and derived rules that are domain-agnostic.
+We anticipate that users will build on these rules for specific use-cases.
+
+\subsection{Observations from Real Data}
+Abedjan et al. provide an extensive experimental evaluation of error detection techniques on real datasets~\cite{DBLP:journals/pvldb/AbedjanCDFIOPST16}.
+The results of Abedjan et al. suggests that the datasets contain an interesting structure that can be exploited to pre-populate the library.
+3 out of the 5 experimental datasets contained significant amounts of missing value constraints--which can largely be detected with sensible heuristics (e.g., hard-coded checks for NULL entries, No Alpha Numeric Characters, N/A, None).
+On one of the remaining datasets, a Functional Dependency violation was correlated with erroneous numerical attribute values allowing it to be detected with quantitative methods.
+And only the final dataset required a complex user-specified Denial Constraint to detect errors. 
+
+In summary on 4 out of 5 datasets, a significant portion of errors, were essentially \emph{domain integrity} errors, i.e., a cell with a value not contained in the set of permissible values.
+We argue that with appropriate featurization such constraints can be learned from data or can be identified by heuristics--and for the remaining errors user-specified constraints are necessary.
+On 8 experimental datasets, our detector achieves a detection accuracy of 81\% of all of the errors found by hand-written rules.
+
+\subsection{Heuristics}
+In a first pass, we apply a collection of heuristics to detect obvious inconsistencies and type signature violations. These heuristics are implemented as \emph{defined} rules in the architecture.
+
+\vspace{0.5em}
+\noindent\textbf{Missing Values: }  We enumerate a set of patterns which commonly describe missing values in a database. This includes attributes that are actually \textsf{NULL}, empty strings, NaN, Inf, or otherwise lack alphanumeric characters.
+
+\vspace{0.5em}
+\noindent\textbf{Parsing/Type Errors: } Since each attribute is tagged with a type signature, we can evaluate if a value matches the type. For numerical values, this means that the entry can be parsed into a floating point number or an integer. For dates and addresses this means that the entry has a minimum of the required components (Month, Day, Year) or (Street, City, State).
+
+\subsection{Detecting Quantitative Errors}
+In addition to the heuristics, we project the dataset to retain just the numerical attributes and apply quantitative outlier detection techniques.
+This module is implemented as a \emph{derived} rule in the architecture.
+In numerical outlier detection the goal is to estimate the \emph{true} spread of a distribution and use that to threshold values that lie outside the spread.
+The key challenge in outlier detection is that the outliers can affect one's estimate of a distribution's spread.
+
+One approach is the Minimum Covariance Determinant (MCD), which is a robust estimator of the variance of a set of numbers, and has been used in a several recent works on numerical outlier detection (most notably MacroBase~\cite{bailis2016macrobase}).
+We experimentally found that this approach is computation expensive and has a number of subtleties in implementation (like handling rank-deficient covariance matrices).
+Instead, we found that a variant of Random Forest classification, called an Isolation Forest, was better suited for the problem.
+The Isolation Forest isolates observations by randomly selecting a feature and then randomly selecting a split value between the maximum and minimum values of the selected feature.
+Since recursive partitioning can be represented by a tree structure, the number of splittings required to isolate a sample is equivalent to the path length from the root node to the terminating node.
+This path length, averaged over a forest of such random trees, is a measure of abnormality and our decision function.
+Since these splits are axis aligned they can be efficiently compiled into threshold rules that can be evaluated on future data.
+
+\subsection{Other Errors: Word2Vec Featurization}
+However, quantitative errors are not a panacea and the difficulty in data quality research has been detecting errors that span multiple heterogenous attributes.
+In principle, statistical outlier detection techniques can apply to featurized data.
+The challenge is that naive featurization can explode the dimensionality of the feature space. Even a two-attribute relation with one numerical and one string-valued attribute, may have 1000s of features if one chooses a bag-of-words representation for the string-valued attribute.
+The statistical power of outlier detection techniques rapidly diminish in the high-dimensional feature-spaces and the discrete distribution of feature vectors (e.g., bag-of-words) may violate the smoothness assumptions needed by the approaches.
+
+One approach is to borrow recent results from Natural Language Processing using Neural Networks to first embed the records in a vector-space and then apply outlier detection techniques. The \textsf{word2vec} model \cite{mikolov2013distributed} is one such approach.
+Using large amounts of unannotated plain text, \textsf{word2vec} learns relationships between words automatically with a Neural Network that predicts the occurrence of nearby words.
+ Each word is assigned a vector in the vector space such that words that share common contexts (i.e., occur in the same document) in the corpus are located in close proximity to one another in the space.
+ This vector space captures semantic relationships between words.
+ 
+ We can adapt \textsf{word2vec} for featurizing records in a relation. Each record is treated as a document and each attribute is treated as word.
+ The model is then trained using all of the records in the training dataset.
+ Thus, for each attribute value we have a vector.
+ To featurize a record, we concatenate these vectors together.
+ Therefore, for each record $r$ there is an associated vector $r_v$.
+  Like the NLP application, this vector space captures semantic relationships between records.
+  We empirically find that applying the Isolation Forest outlier detection in this space leads to improved results.
+We noticed that the quantitative outlier detection and word2vec both used the Isolation Forest as the main primitive, but with different featurizations.
+
+
+
+
+

@@ -1,0 +1,10 @@
+\section{Conclusion and Future Work}
+We presented \sys, a new data cleaning system that detects errors in ML data and uses knowledge of the labels to adaptively select from a set of repair actions to maximize prediction accuracy.
+We evaluated results on 8 ML datasets on Kaggle and the UCI repository with real data errors and compare to statistical anomaly detection techniques, constraint-based techniques, and the best single cleaner performance. In all 8 datasets, \sys had a higher test accuracy than alternatives. We also demonstrate how we can parallelize the inner-loop of the boosting operation, and on a 16-core machine \sys achieves a 9.7x speedup. Similarly, we show that building an inverted index can speed up operator selection time by 2.3x.
+
+Our results are promising and they suggest several avenues for future research.
+First, clearly the biggest limitation is the need for direct accuracy measure.
+While this is available in many settings, we hope to relax this restriction in the future.
+This might require a more complex ensembling technique than boosting.
+Another interesting direction is considering infinite parametrized data cleaning libraries, and how selection from these libraries might work.
+Of course, we also hope to continue industrial collaborations and real-world evaluations of our system.

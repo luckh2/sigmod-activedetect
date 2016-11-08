@@ -1,0 +1,75 @@
+\section{System Design}
+In this section, we describe the architecture and API of \sys. We walk through an example application of training a model on the UCI Adult Census Dataset\footnote{https://archive.ics.uci.edu/ml/datasets/Adult}.
+
+\subsection{Loading a Dataset}
+The first step in using \sys is loading a dataset. \sys requires that that data is initially weakly structured, similar to the assumptions of SQLShare~\cite{howe2013sqlshare}. It assumes that each row corresponds to a record and attributes are delimited, but there are potentially missing values, the domain of possible attribute values are unknown, and the data types are unknown.
+We implemented a schema-on-read loading module that takes as input CSV or text files.
+This module returns a structured relation of tuples and inferred data types for each attribute (numerical, categorical, string, date, address).
+We designed the type inference to be soft--allowing for errors to exist in the dataset.
+The module automatically builds indices over the numerical and categorical attributes (range index and hash index respectively).
+These indices will help optimize the error detection module.
+
+For the example dataset, the user can load the dataset with our Python API.
+\begin{lstlisting}
+from activedetect.loaders import CSVLoader
+
+c = CSVLoader()
+loadedData = c.loadFile('datasets/adult.data')
+\end{lstlisting}
+
+\subsection{Detector}
+Given a relation $R$, the detector module returns a list of cells $C_{d}$ that are possibly dirty.
+\sys applies an ensemble of quantitative error detection techniques and heuristics to identify erroneous tuples.
+Since datasets do not only consist of numerical attributes, we propose a straight-forward solution to this problem, first featurizing a relation with pre-trained neural networks (a variant of Google's Word2Vec architecture) fine-tuned to the dataset, which first embeds the attribute into a smooth vector-space.
+In this space, we apply standard outlier detection techniques.
+We take a number of steps to optimize the error detection queries.
+For example, detecting numerical outliers (i.e., attributes that lie $k$ std. deviations away from the mean) can be computed efficiently using a range index--it can be computed using an index-only query plan.
+We can apply similar optimizations for missing value heuristics that do not depend on multiple attributes.
+
+For the example dataset, the result of the detector module is an iterator that allows the user to query the detected errors:
+\begin{lstlisting}
+from activedetect.error_detectors import *
+
+detector = ErrorDetector(loadedData)
+detector.fit()
+
+for error in detector:
+    do_something(error)
+\end{lstlisting}
+
+\subsubsection{Prioritization}
+Running the default detector in \sys, returns 3807 errors out of about 3200 records for the Census dataset.
+However, not all errors are that important to the subsequent analysis. \sys prioritizes errors that are correlated with mispredictions in the ML model. The result of applying it to the Census dataset is 346 prioritized errors.
+
+\begin{lstlisting}
+from activedetect.filters import *
+
+filter = Filter(detector, predictions)
+filter.fit()
+
+for error in filter:
+    do_something(error)
+\end{lstlisting}
+
+\subsection{Cleaner}
+After the detector returns $C_{d}$ (possibly prioritized), the cleaner applies one of three actions: (1) impute the cell with a sensible default (consistent null symbol, mean value, most frequent value), (2) remove the record from the training set, or (3) flag the record as ``unpredictable'' return a null prediction or the most frequent label. The challenge is that search space is exponential in the number of cells. For each cell $c \in C_{d}$, the cleaner returns a corresponding cleaning operation.
+
+\begin{lstlisting}
+from activedetect.cleaners import *
+
+cleaner = Cleaner(filter, eval_test_error)
+cleaner.fit()
+\end{lstlisting}
+
+
+\subsection{Synthesizer}
+Given a the list of edits and cells, the synthesizer generates a Python program that given future unlabeled dirty data in the same schema will predict the the label. This Python program converts the proposed edits into a decision tree of if-else statements.
+
+\begin{lstlisting}
+from activedetect.synthesizer import *
+
+synth = Synthesizer(cleaner)
+synth.saveProgram('clean_adult_dataset.py')
+\end{lstlisting}
+
+
