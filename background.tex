@@ -34,7 +34,7 @@ So, the analyst has a couple different options to handle this error: (1) impute 
 % \vspace{-5pt}
 \centering
  \includegraphics[width=0.8\columnwidth]{figures/training_and_pred_errors.png}
- \caption{Training errors are invariants that are expected to be true during prediction time are violated in the training dataset. Prediction errors are invariants that are expected to be true during training time are violated when the model is asked to predict a label for a new example. \sys is a tool to detect such violations and learns to perform a corrective action.
+ \caption{The above example uses the invariant that the number of employees is greater than $0$.  Training errors are violations of the invariante in the training dataset (top row). Prediction errors are invariant violations in the test data during prediction. \sys is a tool to {\it detect} both types of errors and generate a corrective {\it repair} action.
  \label{fig:error}}
 \end{figure}
 
