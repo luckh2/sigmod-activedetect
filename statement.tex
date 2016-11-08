@@ -94,11 +94,7 @@ $$C_{\mathcal{L}}(r) = \begin{cases}
     l^*(\mathcal{L}^d(r, r), r) & \text{otherwise}
 \end{cases}$$
 
-\begin{figure}\centering
-\includegraphics[width=\columnwidth]{figures/workflow.png}
-\caption{Offline (orange) and online (blue) workflows.}
-\label{fig:workflow}
-\end{figure}
+
 
 \subsection{Problem Statement}
 This problem formulation makes several simplifying assumptions.  
@@ -112,6 +108,14 @@ $$\mathcal{L}^* = \argmax_{L \in \mathcal{D}\times\mathcal{F}} acc(C_L)$$
 
 Greedy solutions that select the top $B$ individual condition repairs will often fail since they might select highly correlated repairs (e.g., imputing a missing value with the mean, and the median).
 Instead, it is desirable for an approach to take the mispredictions from previous conditional repairs into account.  This is the reason we applied a boosting-based approach towards selecting conditional repairs, described in the next section~\cite{schapire2003boosting}.
+
+\begin{figure}\centering
+\includegraphics[width=\columnwidth]{figures/workflow.png}
+\caption{Offline (\orange{orange}) and online (\blue{blue}) workflows.}
+\label{fig:workflow}
+\end{figure}
+
+Figure~\ref{fig:workflow} summarizes the training and prediction workflows given the optimal sequence of conditional repairs $\mathcal{L}^*$.  The \orange{orange line} depicts the training process, which first applies the conditional data repairs to the training dataset, and calls \texttt{train()} to generate classifier $C$.  The \blue{blue lines} depict how \sys generates a prediction for a test record: the classifier $C$ makes a prediction using the record cleaned by the conditional data repairs.  In addition, the conditional prediction repair checks the uncleaned test record to decide whether to return the classifier prediction or a default value.
 
 
 \iffalse
