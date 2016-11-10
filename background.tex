@@ -1,4 +1,4 @@
-\vspace{2em}
+
 \section{Background}
 This section motivates \sys in relation to prior work.
 Using the pilot study as inspiration, consider the following running example to describe the system and notation:
@@ -20,34 +20,14 @@ where $name$ is the company name, $num\_emp$ is the number of employees in the c
 \end{figure}
 
 \subsection{Machine Learning and Dirty Data}
-It is important to emphasize that we are not concerned about statistical noise or the natural variance of data in the dataset.
-Rather, we are interested in cases where an invariant that is expected to be true, i.e., a logical assertion about properties of the dataset, is violated leading unforeseen biases in the way the records are featurized.
-For example, suppose we expect every $num\_emp \ne~NULL$, but the particular dataset we receive has null values.
-Either the featurization program will error, or worse, it may not error and interpret $NULL$ as $0$.
-However, semantically $NULL$ and $0$ refer to two very different concepts: a missing value or a company with no employees.
-Conversely, one can also construct cases where two values that have the same semantic meaning are mapped to different numerical representations.
-Suppose the attribute $region$ has two representations for the western United States: $USWEST$ and $USW$. 
-This error would lead to two different feature values for records from the same region.
-
-Fundamentally, performance of a model degrades when these violated invariants create a mismatch between the training and prediction environments~(Figure \ref{fig:error}):
-
-\vspace{0.5em}\noindent\textbf{Training Errors: } Invariants that are expected to be true during prediction time are violated in the training dataset. In the running example, consider the case when $R$ is integrated from multiple previously collected datasets, where some of the datasets failed to record $num\_emp$. Assuming that there is no convenient way to retroactively determine the ground truth, the analyst has a couple of options to handle this error: (1) drop all records with a missing  $num\_emp$ value, or (2) impute $num\_emp$ with a sensible default value.
-
-\vspace{0.25em}\noindent\textbf{Prediction Errors: } Invariants that are expected to be true during training time are violated when the model is asked to predict a label for a new example. 
-Consider the case where all of the training examples recorded $num\_emp$, but a new test example has a null value.
-Unlike in the training set, it may not be an acceptable solution to drop a prediction (i.e., the system fails to respond to a query).
-So, the analyst has a couple different options to handle this error: (1) impute $num\_emp$ with a sensible default value and then predict, (2) apply a ``fail-safe'' prediction.
-
-\ewu{why say ``expected to be true during training are violated in prediction'' rather than ``invariants are violated''?}
-
-\vspace{0.5em}
-
-Eventually, we may want to integrate the new examples into the model and re-train--turning prediction errors into future training errors.
-Already, for a missing value in $num\_emp$, there are four different choices the analyst can handle a violation (2 training $\times$ 2 prediction).
-These four choices have to be evaluated for each possible error type based on its severity, data type, and predictive importance.
-Recent surveys of data scientists suggest that the current procedure for making these choices is manual and ad-hoc~\cite{kandel2012, krishnan2016hilda}.
-As ML applications are increasingly in the critical path, management systems that are resilient to errors by automatically making such choices are important.
-\ewu{Not clear what the above text is trying to argue -- that there are too many options to manually try?  that it's not clear what a ``goodness'' criteria is?  somethingelse?}
+First, we note a few important points about ML and data cleaning.
+ML models are often used because they are robust to some statistical noise and variation in the dataset.
+We are not concerned about reducing random statistical noise or the natural variance of data in the dataset.
+Rather, we are interested in cases where an invariant that is expected by the Software Engineer, i.e., a logical assertion about properties of the dataset, is violated leading unforeseen biases in the way the records are featurized.
+Second, while the notion of invariants is similar to traditional relational data cleaning, the way that repairs are evaluated differ.
+In relational data cleaning, we often value minimality (i.e., given a set of violations, this is the minimal set of repairs to rectify all violated constraints).
+On the other hand, in ML, we are interested in optimizing for downstream prediction accuracy--and these two metrics are not always aligned.
+Finally, the availability of test data is a valuable resource in ML and we explore how this can be leveraged to identify repairs that maximally improve prediction accuracy.
 
 \subsection{Possible Approaches}
 \sys brings together generic, dataset-independent error detection with automatically learned repair strategies for ML applications.

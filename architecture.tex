@@ -1,5 +1,12 @@
+\section{The \sys System}\label{s:arch}
+ 
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/arch.pdf}
+\caption{\sys system architecture.}
+\label{f:arch}
+\end{figure}
 
-% \subsection{Architecture Overview}
 Figure~\ref{f:arch} depicts the primary components of the system architecture. The \blue{blue} component manages the detection and repair libraries while the \orange{orange} components execute the Boost-and-Clean algorithm to generate the sequence of conditional repairs $\mathcal{L}^*$.  To generate $\mathcal{L}^*$, \sys takes as input training and test datasets, where the only restriction is that the test labels are correct. 
 
 \sys first executes the library of detector generators on the training dataset to produce a set of candidate predicates (Section~\ref{s:detectorgen}).    The {\it Boost-and-Clean} component takes these predicates, along with the repair functions, as input and selects a subset of the pairs (conditional repairs).  To do so, it iteratively selects the next conditional repair by appending it to the sequence of repairs so far, training a new classifier using the sequence and evaluating it using the {\it Test Accuracy Evaluator}.  Finally, the conditional repairs $\mathcal{L}^*$ are sent to the {\it Deployer}, which compiles the sequence into a  classifier that can detect and repair errors in the test records so that the predictions are robust to the detected data errors.  
@@ -38,7 +45,7 @@ We have implemented four classes of featurizers:
 Although the above featurizers are effective for quantitative attributes, many datasets contain text attributes that are not amenable to the above approaches.  Also, naively featurizing text attributes using, e.g., hot-one encoding, can easily increase the dimensionality of the dataset to tens of thousands or millions of dimensions---even a two-attribute relation with one numerical and one string-valued attribute, may have thousands of features.  The statistical power of outlier detection techniques rapidly diminishes in the high-dimensional feature-spaces.
 
 In response, we borrow the recent concept of text embeddings to featurize text values into a lower-dimensional vector-space.  Specifically, we use the popular \textsf{word2vec} model~\cite{mikolov2013distributed}, which is a word embedding that can be trained on a corpus of text documents to customize its similarity measure for a given dataset.  For our purposes, we model each record as a document, where each attribute value is a ``word''.  Thus, each attribute value is mapped to a vector, and each record is the concatenation of its attributes' vectors.  The isolation forest then takes this vector as input to generate an appropriate predicate.  In our experiments, we find that this simple approach is effective at detecting violating patterns. This detects records whose attributes do not typically occur together. 
-\reminder{sk will add more}
+\reminder{sk will add more} \ewu{I think you should clarify what ``training'' the word2vec means and why it matters}
 
 
 %One approach is to borrow recent results from Natural Language Processing using Neural Networks to first embed the records in a vector-space and then apply outlier detection techniques. The \textsf{word2vec} model \cite{mikolov2013distributed} is one such approach. Using large amounts of unannotated plain text, \textsf{word2vec} learns relationships between words automatically with a Neural Network that predicts the occurrence of nearby words.  Each word is assigned a vector in the vector space such that words that share common contexts (i.e., occur in the same document) in the corpus are located in close proximity to one another in the space.  This vector space captures semantic relationships between words.
