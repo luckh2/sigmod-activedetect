@@ -62,9 +62,9 @@ Restaurant (Multiclass) & 0.42 & 0.42 & 0.58 & 0.68 & \blue{0.62} & 0.36 & 0.61 
 \hline
 Company X & NC & Q &	IC & Q+IC &	Best &	Worst &	BC-3 & BC5 & Rel. Improvement\\
 \hline
-Dataset 1 (AUC) &0.60& & & &0.61& & &0.66& 0.69\\
-Dataset 2 & & & & & & & & &\\
-Dataset 3 & & & & & & & & &\\
+Dataset 1 (AUC) &0.60&0.59&0.60&0.60&0.61&0.59&0.66&0.69& +13\% \\
+Dataset 2 (AUC) &0.55&0.53&0.52&0.55&0.55&0.52&0.61&0.63&\\
+Dataset 3 (AUC) & & & & & & & & &\\
 \hline
 \end{tabular}
 \caption{End-to-end accuracy results for each dataset and experimental method. We report standard classification accuracy.  The right column summarizes the accuracy improvement relative to the best non BC-3/5 approach.}
@@ -302,7 +302,7 @@ Our initial experiment showed that for this class of datasets, reasonably accura
  
  \begin{figure}[t]
 \centering
- \includegraphics[width=0.8\columnwidth]{exp/opt1.png}
+ \includegraphics[width=0.9\columnwidth]{exp/opt1.png}
  \caption{This plot (log scale) shows the impact of optimizations on the selector's runtime. Materialization and Indexing allow the algorithm to scale with the number of selected cleaners. Otherwise, the algorithm repeatedly retrains and recleans the same data.
  \label{fig:opt}}
 \end{figure}
@@ -320,7 +320,7 @@ Our initial experiment showed that for this class of datasets, reasonably accura
  
  \begin{figure}[t]
 \centering
- \includegraphics[width=0.8\columnwidth]{exp/learn.png}
+ \includegraphics[width=0.9\columnwidth]{exp/learn.png}
  \caption{For three different classification models, we plot the learning curves for the repair selector. Selecting too many cleaners can lead to overfitting.
  \label{fig:learning}}
 \end{figure}
