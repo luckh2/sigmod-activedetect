@@ -29,7 +29,9 @@ Initialize $W^{(1)}_i = \frac{1}{N}$\\
 \end{algorithm}
 
 \subsection{Why Boosting?}
-\ewu{The key difference from naive feature selection algorithms is that it adjusts the weights to prioritize repairs of errors}
+The key difference from naive feature selection algorithms is that it selects over the space of models rather than the space of features.
+If we have repair operations that cannot simply be reperesented as 
+
 Each of the library elements define a weak learner.
 Given the dataset $R$, we can apply $l_i(R)$ and then train the base classifier $C$. 
 The weak learners are evaluated on the clean test labels, which dictates weighting.
