@@ -62,7 +62,7 @@ Restaurant (Multiclass) & 0.42 & 0.42 & 0.58 & 0.68 & \blue{0.62} & 0.36 & 0.61 
 \hline
 Company X & NC & Q &	IC & Q+IC &	Best &	Worst &	BC-3 & BC5 & Rel. Improvement\\
 \hline
-Dataset 1 & & & & & & & & &\\
+Dataset 1 (AUC) &0.60& & & &0.61& & &0.66& 0.69\\
 Dataset 2 & & & & & & & & &\\
 Dataset 3 & & & & & & & & &\\
 \hline
@@ -329,7 +329,7 @@ Our initial experiment showed that for this class of datasets, reasonably accura
  One concern with the repair selector is overfitting. We evaluate to what extent, \sys overfits in Figure \ref{fig:learning}, where we plot the learning curves (accuracy as a function of the number of cleaners $B$).
  We try three different classification models, random forests, SVMs, and logistic regression.
  For all of the models we see similar results, where there is an optimal $B$ to select after which \sys overfits.
-This is a major concern on small datasets, but for a sufficiently large dataset with proper test and training evaluation, this can be set through cross-validation. 
+This is a major concern on small datasets \ewu{How Small?}, but for a sufficiently large dataset with proper test and training evaluation, this can be set through cross-validation. 
 
 \subsubsection{Synthetic Corruptions}
 
