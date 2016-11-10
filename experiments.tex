@@ -34,9 +34,6 @@ We describe hyper-parameter settings for each technique in the text of each expe
 
 We used the \textsf{sklearn} Random Forest classifier with custom depth and branch parameters.  The training procedure uses a set of standard featurizers (hot-one encoding for categorical data, bag-of-words for string data, numerical data as is) in a similar fashion as~\cite{DBLP:conf/sigmod/GokhaleDDNRSZ14}.  Note that these featurizers are used as part of the black-box training procedure and are distinct from those used in the detector generator library.
 
-
-
-
 \begin{table*}[t]
 \centering
 \label{tab:accuracy}
@@ -62,8 +59,8 @@ Restaurant (Multiclass) & 0.42 & 0.42 & 0.58 & 0.68 & \blue{0.62} & 0.36 & 0.61 
 \hline
 Company X & NC & Q &	IC & Q+IC &	Best &	Worst &	BC-3 & BC5 & Rel. Improvement\\
 \hline
-Dataset 1 (AUC) &0.60&0.59&0.60&0.60&0.61&0.59&0.66&0.69& +13\% \\
-Dataset 2 (AUC) &0.55&0.53&0.52&0.55&0.55&0.52&0.61&0.63&\\
+Dataset 1 (AUC) &0.60&0.59&0.60&0.60&0.61&0.59&0.66&\blue{0.69}& +13.3\% \\
+Dataset 2 (AUC) &0.55&0.53&0.52&0.55&0.55&0.52&0.61&\blue{0.63}& +14.5\%\\
 Dataset 3 (AUC) & & & & & & & & &\\
 \hline
 \end{tabular}
@@ -236,9 +233,9 @@ american (*\orange{\bf{(traditional)}}*)
 On this dataset, we see a negative result from \sys. Our test error decreases as we increase the number of selected cleaners. We speculate this is due to overfitting due to the extremely small size of the dataset  ($<1000 records$) combined with the expressiveness of the classifiers model.
 
 \subsubsection{Company X Experiments}
-We applied \sys to three datasets from Company X.
+We applied \sys to two datasets from Company X. In these two datasets, we discovered missing values and word2vec errors. 
 
-\reminder{TODO Write Description}
+
 
 \begin{figure}[t]
 \centering
