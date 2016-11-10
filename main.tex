@@ -171,8 +171,8 @@ Since repairs are potentially ambiguous, \sys ``hedge its bets'' by using an ens
 We describe materialization, indexing, and parallelization strategies that find this ensemble efficiently, and results suggest greater than an order-of-magnitude speedup.
 \sys provides a library of dataset-independent error detectors
 based on deterministic heuristics and statistical criteria. To better detect errors in categorical attributes, one of the modules in this library is a novel anomaly detector based on the Word2Vec Neural Network architecture.
-We evaluated results on 8 ML datasets on Kaggle and the UCI repository with real data errors and compare to statistical anomaly detection techniques, constraint-based techniques, and the best single cleaner performance.
-We demonstrate how we can parallelize the inner-loop of the boosting operation, and on a 16-core machine \sys achieves a 9.7x speedup.
+We evaluated \sys on a collection of datasets from machine learning competitions, real-world data analyses, and \company, and found that statistically improvements in prediction accuracy in comparison to baseline approaches on completely unseen test data. 
+We demonstrate how we can parallelize the inner-loop of the boosting operation, and on a 16-core machine, \sys achieves a 9.7x speedup.
 \end{abstract}
 
 
