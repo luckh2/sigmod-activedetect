@@ -1,4 +1,4 @@
-\section{Boost-and-Clean}
+\section{Repair Selection Algorithm}
 The key insight of this paper is that the problem described in Section 3.3 can be addressed with statistical boosting.
 
 \subsection{Overview of Boosting}
@@ -19,14 +19,17 @@ Formally, the AdaBoost algorithm~\cite{freund1995desicion} proceeds as follows:
 Initialize $W^{(1)}_i = \frac{1}{N}$\\
 \For{$t \in [1, T]$}{
   $C_t$ = Train weak learner on dataset weighed by $W^{t}_i$ 
-  $W^{(t+1)}_i \propto W^{(t)}_i e^{-\alpha y_i C_t(x_i)}$: down-weigh correct predictions, up-weigh incorrectly predictions.
+  $\epsilon_t$ = Calculate weighted classification error 
+  $\alpha_t = \ln(\frac{1-\epsilon_t}{\epsilon_t})$ 
+  $W^{(t+1)}_i \propto W^{(t)}_i e^{-\alpha_t y_i C_t(x_i)}$: down-weight correct predictions, up-weight incorrectly predictions.
 }
-\Return $C(x) = \text{sign}(\sum_t^T \alpha C_t(x) )$
+\Return $C(x) = \text{sign}(\sum_t^T \alpha_t C_t(x) )$
 \caption{AdaBoost Algorithm}
 \label{alg:adaboost}
 \end{algorithm}
 
 \subsection{Why Boosting?}
+\ewu{The key difference from naive feature selection algorithms is that it adjusts the weights to prioritize repairs of errors}
 Each of the library elements define a weak learner.
 Given the dataset $R$, we can apply $l_i(R)$ and then train the base classifier $C$. 
 The weak learners are evaluated on the clean test labels, which dictates weighting.
@@ -37,13 +40,14 @@ Furthermore, there is a subtle relationship between this process and feature sel
 Another approach could be to materialize each $l_i(R)$ as another set of features for the classifier and train across the entire library.
 This approach makes an assumption that each $l_i$ is simply a row-by-row transformations and cannot discard data or correct a label.
 
-\subsection{Boost-and-Clean Algorithm}
+\subsection{Boost-and-Clean Algorithm}\label{s:boostalg}
 The boosting algorithm proceeds as follows.
 Find the $l_i \in \mathcal{L}$ that generates the classifier with highest test accuracy.
 Repeat until $B$ cleaning operations are selected, by selecting the operation that performs best on the current ensembles mispredictions and so on.
 The result is a new classifier $C_{clean}$ that is derived from the ensemble.
 
 As before, without loss of generality we present the binary classification case with labels in $\{-1,1\}$.
+\ewu{Fix up notation for steps 1 and 2 to be consistent with problem statement.  Turn into algorithm format}
 \begin{enumerate}
     \item \textbf{Given (1): } Given the library $\mathcal{L}$ it generates a set of classifiers $\{C^{(0)}, C^{(1)},...,C^{(k)}\}$ where $C^{(0)}$ is the base classifier and $C^{(1)},...,C^{(k)}$ are derived from the cleaning operations.
     \item \textbf{Given (2): } The evaluation dataset $(F_{test}, P_{test})$ with N tuples.
@@ -71,24 +75,5 @@ Boosting is well-understood statistically, and we can further bound the error on
 \begin{proposition}[Error Bound]
 For a budget of $B$ cleaning operations, the error rate of Boost-and-Clean on the test dataset decreases as $\mathbf{O}(e^{-2B})$.
 \end{proposition}
-
-
-\subsection{Optimizations and Parallelism}
-There are few optimizations that we can apply to make this 
-boosting algorithm performant. For these optimizations, we assume that the test dataset fits in memory on a single-node.
-
-\vspace{0.25em}\noindent\textbf{Up-front Materialization: } The first observation is that between iterations the cleaning operations actions do not change--only the way that we score the accuracy. So before running step 4 of the algorithm, we can materialize each of the classifiers predictions on the entire test dataset.
-This means for each $f \in F_{test}$, calculate $C_i(f)$ up-front and store it in memory.
-
-\vspace{0.25em}\noindent\textbf{Indexing: } Since we focus on classification, scoring each classifier can be made very efficient with an inverted index.
-For each $j$ in the output domain of the classifier $C$, we store an index $j \mapsto \{f : C_i(f) == j\}$.
-This allows us to efficiently query the set of points in each round that are mispredicted and correctly predicted.
-
-\vspace{0.25em}\noindent\textbf{Parallelism: }
-In Step 4a the algorithm iterates through the list of classifiers, scores each one on the weighted test dataset, and takes the maximum.
-This step is embarrassingly parallel and we run each scoring iteration in a separate thread.
-
-
-
 
 

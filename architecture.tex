@@ -8,9 +8,11 @@
 \end{figure}
 
 % \subsection{Architecture Overview}
-Figure~\ref{f:arch} depicts the primary components of the system architecture. The \blue{blue} components manage the detection and repair libraries while the \orange{orange} components execute the Boost-and-Clean algorithm to generate the sequence of conditional repairs $\mathcal{L}^*$.  As described below, \sys is pre-populated with a library of detector generators and repair functions that work well in practice (Section~\ref{s:exp}).  However, by separating the two libraries, users are ablo to specify custom detection or repair rules that fit their domain.
+Figure~\ref{f:arch} depicts the primary components of the system architecture. The \blue{blue} component manages the detection and repair libraries while the \orange{orange} components execute the Boost-and-Clean algorithm to generate the sequence of conditional repairs $\mathcal{L}^*$.  To generate $\mathcal{L}^*$, \sys takes as input training and test datasets, where the only restriction is that the test labels are correct. 
 
-To generate $\mathcal{L}^*$, \sys takes as input training and test datasets, where the only restriction is that the test labels are correct.  It executes the detector generators on the training data to create a set of predicates which, along side the repair functions, are sent to the {\it Boost-and-Clean component}.  This component iteratively selects the next conditional repair by appending it to the sequence of repairs so far, training a new classifier using the sequence and evaluating it using the {\it Test Accuracy Evaluator}.  Below, we describe each component in more details, as well as the programming API for the system.
+\sys first executes the library of detector generators on the training dataset to produce a set of candidate predicates (Section~\ref{s:detectorgen}).  Each predicate $p_i$, when executed on the training set, generates a {\it Violation Set} $V_i$ of records that match the predicate.  The {\it Boost-and-Clean} component takes these Violation Sets, along with the repair functions, as input and selects a subset of the pairs (conditional repairs).  To do so, it iteratively selects the next conditional repair by appending it to the sequence of repairs so far, training a new classifier using the sequence and evaluating it using the {\it Test Accuracy Evaluator}.  Finally, the conditional repairs $\mathcal{L}^*$ are sent to the {\it Deployer}, which compiles the sequence into a  classifier that can detect and repair errors in the test records so that the predictios are robust to data errors.  
+
+\sys is pre-populated with a library of detector generators and repair functions that work well in practice (Section~\ref{s:exp}).  However, by separating the two libraries, users are able to specify custom detection or repair rules that fit their domain.  Below, we describe each component in more details, as well as the programming API for the system.
 
 \iffalse
     The architecture of \sys includes three high-level components: (1) a loader, (2) error detector, and (3) repair action selector.
@@ -23,49 +25,94 @@ To generate $\mathcal{L}^*$, \sys takes as input training and test datasets, whe
 \fi
 
 
-\subsection{Detector Selector}
-We noticed that many derived rules follow a similar structure.
-First, they convert a row into a feature vector (in the above example, trivially projecting onto $num\_employees$).
-Next, they apply a threshold (possibly multi-dimensional) on the feature vector.
-We propose a modular architecture that has a single outlier detection technique (called Isolation Forests) at the end of the pipeline but allows for different types of featurization.
-User defines a function that maps a row to a vector in $\mathbb{R}^d$ and the Isolation Forest identifies outliers in this space.
-For a scalar feature in $\mathbb{R}$, the Isolation Forest degenerates into a threshold rule. 
-We experimented with alternative outlier detection techniques (e.g., Minimum Covariance Determinant) but found that the Isolation Forest provided the best tradeoff between runtime and accuracy.
+\subsection{Detectors}
 
-While the availability of such rules is a typical assumption in data cleaning~\cite{DBLP:conf/sigmod/ChuIKW16},  defining such rules requires extensive domain knowledge and is time-consuming.
-One of our design objectives is to minimize the burden on data scientists, so we provide an initial library of rules which are described in the next section.
-These rules are not meant to replace domain knowledge but rather to address routine problems seen across many different datasets.
+The ability for a data cleaning system to accurately identify data errors relies on the availability of a set of high quality error detection rules~\cite{DBLP:conf/sigmod/ChuIKW16}.  To help developers easily implement new detector generators, we have implemented \detectlib, a library that transforms feature extraction functions into detector generators automatically.  In addition, to help developers quickly bootstrap their data cleaning process, \sys includes a pre-populated library of simple feature extraction functions that are effective at detecting data errors across a wide range of domains and data science applications (Section~\ref{s:exp}).  We note that these libraries are not meant to replace domain knowledge, but rather to address routine problems.
 
 
+\subsubsection{The \detectlib Library}
+Although users may directly implement detector generators as described in Section~\ref{s:detectorgen}, we found that many cleaning detection algorithms in machine learning workflows, including \company, follow a fixed outlier-detection structure: first they convert a record into a feature vector,  select threshold(s) over one or more features in the vector such that if the thresholds are exceeded, then the record is identified as a candidate dirty record.  Although developers often have a clear sense of useful features to extract from the dataset, it is often unclear how to tune the thresholds and for which features thresholds should be defined for.  
 
-\subsection{Loader}
-The first step in using \sys is loading a dataset. \sys requires that that data is initially weakly structured, similar to the assumptions of SQLShare~\cite{howe2013sqlshare}. It assumes that each row corresponds to a record and attributes are delimited, but there are potentially missing values, the domain of possible attribute values are unknown, and the data types are unknown.
-We implemented a schema-on-read loading module that takes as input a SQL table, CSV, or a text file.
-This module returns a structured relation of tuples and inferred data types for each attribute (numerical, categorical, string, date, address).
-We designed the type inference to be soft--allowing for errors to exist in the dataset.
-The module automatically builds indices over the numerical and categorical attributes.
-These indices will help optimize the error detection module.
+For this reason, \detectlib employs a modular approach that automatically performs the latter threshold tuning task so that developers can focus on feature engineering.   Developers simply define featurization functions that map records into a numerical feature vector; for each featurizer, \detectlib executes it and performs outlier detection to select the combination of features and thresholds that will identify the outliers.  
+
+We considered a number of outlier detection algorithms to use.  A recently popular approach is a robust estimator of the sample population variance called Minimum Covariance Determinant~\cite{} (MCD), which has been used in systems such as MacroBase~\cite{bailis2016macrobase}.  The key limitation is that the technique is computationally expensive and has a number of subtleties in implementation (like handling rank-deficient covariance matrices) \ewu{What about these subtleties matter?  numerical instability?  degenerate results?  be more explicit}.
 
 
-
-\subsection{Cleaner}
-Given a set of detected violations $\{V_1,...,V_j\}$, the cleaner assigns a tuple possible repair action to each $V_i$ (one if the data is in training, one if the data is in test).
-Repairs are applied as a batch to each set of violations and not in a per-cell basis.
-The available options are:
-\begin{enumerate}
-    \item \emph{Impute the mean (Train and Test): } Impute a cell in violation with the mean value of the attribute calculated over the training data excluding violated cells.
-    \item \emph{Impute the mode (Train and Test): } Impute a cell in violation with the most frequent value of the attribute calculated over the training data excluding violated cells.
-    \item \emph{Impute the median (Train and Test): }Impute a cell in violation with the median value of the attribute calculated over the training data excluding violated cells.
-     \item \emph{Discard (Train Only): } Discard a row with a violated cell from the training dataset.
-     \item \emph{Fail-Safe (Test Only): } Automatically predict the most-frequent label for a row with a violated cell.
-\end{enumerate}
-
-The cleaner's role is to learn an assignment of these actions to each of the violations.
-The combination of the actions and the predicates define the data cleaning libary $\mathcal{L}$.
+We instead use a variant of Random Forest classification, called Isolation Forests~\cite{}.  The Isolation Forest is inspired by the observation that outliers are more easily separable from the rest of the dataset than non-outliers.  It grows a forest of isolation trees, where each tree is randomly grown---it selects a random attribute and a random threshold value---until a leaf node contains a single record.  The length of the path to the leaf node is a measure for the outlier-ness of the record---a shorter path more strongly suggests that the record is an outlier.  The isolation forest creates a large set of isolation trees and classifies records with short average path length as outliers.  In contrast to computational expensive algorithms such as MCD, Isolation Forests have a linear time complexity and very small memory requirements.  A nice property of the technique is that the resulting forest can be simplified and efficiently compiled into simple threshold rules. % For example, if a featurizer extracts a scalar feature in $\mathbb{R}$ (e.g., $n\_emp$), the Isolation Forest will generate a single-attribute threshold rule (e.g., $n\_emp > 2$).  
+% We experimented with alternative outlier detection techniques (e.g., Minimum Covariance Determinant) but found that the Isolation Forest provided the best trade-off between runtime and accuracy.
 
 
+\subsubsection{Pre-populated Featurizers}
+
+We have implemented four classes of featurizers:
+
+\ewu{We will want to address how \sys deals with detectors that have false negatives and/or false positives}
+
+\stitle{Numerical Attributes: } The simplest featurizer simply projects the numerical attributes into a feature vector.  We find that this is effective at identifying \ewu{SANJAY, FILL THIS OUT}.
+
+\stitle{Missing Values: }  We manually enumerated a set of regular expression patterns that commonly describe missing values in a database.  These include \textsf{NULL} attribute values; patterns such as empty string, NaN, Inf; or values whose string representations lack alphanumeric characters. Each pattern corresponds to a boolean feature in the extracted feature vector.   Although this is a hand curated list, it is easily extensible and is effective at identifying \ewu{SANJAY: FILL THIS OUT}.
+
+\stitle{Parsing/Type Errors: } We use each attribute's type signature to check whether an attribute value matches the type signature.  For numerical attributes, the featurizer outputs whether the entry can be parsed into a floating point number or an integer. For dates and address types, we check whether common components (e.g., Month, Day, Year for dates, Street, City for addresses) are found using common date and address parsing libraries.   this means that the entry has a minimum of the required components (Month, Day, Year) or (Street, City, State). \ewu{SANJAY: do we actually have such a detector for addresses and dates??}
+
+
+\stitle{Text Errors using Word Embeddings: }
+Although the above featurizers are effective for quantitative attributes, many datasets contain text attributes that are not amenable to the above approaches.  In addition, naively featurizing text attributes using e.g., hot-one encoding~\cite{} can easily increase the dimensionality of the dataset to tens of thousands or millions of dimensions---even a two-attribute relation with one numerical and one string-valued attribute, may have thousands of features.  The statistical power of outlier detection techniques rapidly diminish in the high-dimensional feature-spaces and the discretization of the text attributes may\ewu{does it violate or not?  May is sketchy here} violate the smoothness assumptions needed by boosting algorithms.
+
+In response, we borrow the recent concept of text embeddings~\cite{} to featurize text values into a lower-dimensional vector-space.  Specifically, we use the popular \textsf{word2vec} model~\cite{mikolov2013distributed}, which is a word embedding that can be trained on a corpus of text documents in order to customize its similarity measure for a given dataset.  For our purposes, we model each record as a document, where each attribute value is a ``word''.  Thus, each attribute value is mapped to a vector, and each record is the concatenation of its attributes' vectors.  The isolation forest then takes this vector as input in order to generate an appropriate predicate.  In our experiments, we find that this simple approach is effective at detecting  \ewu{SANJAY FILL IN}.
+
+
+%One approach is to borrow recent results from Natural Language Processing using Neural Networks to first embed the records in a vector-space and then apply outlier detection techniques. The \textsf{word2vec} model \cite{mikolov2013distributed} is one such approach. Using large amounts of unannotated plain text, \textsf{word2vec} learns relationships between words automatically with a Neural Network that predicts the occurrence of nearby words.  Each word is assigned a vector in the vector space such that words that share common contexts (i.e., occur in the same document) in the corpus are located in close proximity to one another in the space.  This vector space captures semantic relationships between words.
+ 
+%We can adapt \textsf{word2vec} for featurizing records in a relation. Each record is treated as a document and each attribute is treated as word.  The model is then trained using all of the records in the training dataset.  Thus, for each attribute value we have a vector.  To featurize a record, we concatenate these vectors together. Therefore, for each record $r$ there is an associated vector $r_v$.  Like the NLP application, this vector space captures semantic relationships between records.  We empirically find that applying the Isolation Forest outlier detection in this space leads to improved results.
 
 
 
 
 
+
+
+
+
+
+
+
+
+\iffalse
+    \subsection{Loader}
+    The first step in using \sys is loading a dataset. \sys requires that that data is initially weakly structured, similar to the assumptions of SQLShare~\cite{howe2013sqlshare}. It assumes that each row corresponds to a record and attributes are delimited, but there are potentially missing values, the domain of possible attribute values are unknown, and the data types are unknown.
+    We implemented a schema-on-read loading module that takes as input a SQL table, CSV, or a text file.
+    This module returns a structured relation of tuples and inferred data types for each attribute (numerical, categorical, string, date, address).
+    We designed the type inference to be soft--allowing for errors to exist in the dataset.
+    The module automatically builds indices over the numerical and categorical attributes.
+    These indices will help optimize the error detection module.
+\fi
+
+
+
+\subsection{Repairs}
+In addition to detector generators, \sys is pre-populated with a set of repair functions that are applied to all records in a given violation set.  In the following five repair functions, the first three can be used as data and prediction repair functions,  whereas the fourth is for data repair, and the last is for prediction repair:
+
+\stitle{Mean Imputation (data and prediction): } Impute a cell in violation with the mean value of the attribute calculated over the training data excluding violated cells.
+
+
+\stitle{Median Imputation (data and prediction): } Impute a cell in violation with the median value of the attribute calculated over the training data excluding violated cells.
+
+\stitle{Mode Imputation (data and prediction): } Impute a cell in violation with the most frequent value of the attribute calculated over the training data excluding violated cells.  In contrast to mean and median imputation, this is also applicable to non-numerical attributes.
+
+\stitle{Discard Record (data): } Discard a dirty record from the training dataset.  This restriction to only training data is to ensure that a degenerate solution---simply deleting all test data---is disallowed. 
+
+\stitle{Default Prediction (prediction): } Automatically predict the most popular label from the training dataset for a row that matches the conditional repair's predicate.
+
+% The cleaner's role is to learn an assignment of these actions to each of the violations.  The combination of the actions and the predicates define the data cleaning libary $\mathcal{L}$.
+
+
+
+\subsection{Optimizations}
+In order to borrow the error bound guarantees, the Boost-and-Clean algorithm (Algorithm~\ref{s:boostalg}) is a direct translation of AdaBoost and a naive implementation of the algorithm can be expensive.  Namely, it takes as input the cross product of predicates and repair function and, in each iteration, requires applying the conditional repairs, and training and testing a classifier for each conditional repair.  To reduce the cost, we employ optimizations to address three bottlenecks in the naive algorithm.  For the purposes of this paper, we make the simplifying assumption that the test datasets fit into memory.
+
+\stitle{Prediction Materialization: } Our first observation is that the cleaning operations actions do not change between iterations of the boosting algorithm--only the weights for computing the accuracy change.  Thus, we pre-train the classifiers $C_i$ corresponding to each conditional repair $l_i$, and materialize their predictions on the test records $C_i(X_{test})$.  
+
+\stitle{Prediction Indexing: } Computing the score for each classifier requires retrieving the the weights of the test records that are mis-predicted and correctly predicted.  We speed up these lookups using a hash index for each classifier that that maps prediction labels to their corresponding test records.
+%the weights of the records , for each $j$ in the output domain of the classifier $C$, stores the mapping $j \mapsto \{x : C_i(x) == j \wedge x \in X_{test}\}$.
+
+\stitle{Parallelization: }  Finally, many of the operations in Boost-and-Clean, such as classifier training and scoring, must be performed for each conditional repair.  We create and execute a thread for each conditional repair to perform each task in parallel.  We leave more advanced optimization techniques such as within-training parallelization~\cite{recht2011hogwild} and sampling the training data for future work.
