@@ -22,7 +22,7 @@ rows = [[0.24 , 0.39  , 0.34   , 0.84   , 0.93  ,  1],
 [0.01  ,  0.03   , 0.04   , 1  , 0.98   , 1],
 [0.66  ,  0.61  ,  0.62  ,  0.82  ,  0.94 ,   1]]
 datasets = ['Census', 'Housing', 'Sensor', 'NFL', 'Titanic', 'Retail' , 'Emergency', 'EEG']
-approaches = ['MCD', 'ISO', 'BC(Q,MV)', 'BC(Q,MV,NN)', 'Custom Rules']
+approaches = ['MCD', 'ISO', 'BC-Q', 'BC-Q,MV', 'BC-Q,MV,NN', 'Custom Rules']
 
 data = []
 for dataset, row in zip(datasets, rows):
@@ -43,20 +43,23 @@ p += facet_wrap("~dataset", ncol=4)
 p += coord_flip()
 p += geom_point(size=1.8)
 p += guides(shape="FALSE", size="FALSE")
-p += axis_labels("", "F1", "discrete", "continuous", xkwargs=dict(lim=map(esc, list(reversed(approaches)))), ykwargs=dict(lim=[0,1], breaks=[0.25, .5, .75], labels=map(esc, [".25", ".5", ".75"])))
+p += axis_labels("", "F1 Score", "discrete", "continuous", 
+    xkwargs=dict(lim=map(esc, list(reversed(approaches)))), 
+    ykwargs=dict(lim=[0,1], breaks=[0, 0.25, .5, .75, 1], labels=map(esc, ["0", ".25", ".5", ".75", "1"])))
 p += legend_none
 ggsave("daccuracy.png", p, width=8, height=3.5, scale=scale)
 
 
 
+
 rows = [[106.1 ,  3.2, 1.3 ,4.4, 5.7, 2.5],
-[16.1 ,   0.7 ,0.06   , 0.14 ,   0.56    ,0.09],
-[567, 62.9   , 7.3 ,9.6, 25.4 ,   10.1],
-[1078.4 , 183 ,64.1  ,  69.6   , 88.4   , 64.1],
-[59.4   , 14.5  ,  6.1, 6.4,8.5 ,6.6],
-[5672.6 , 234.7  , 88.7  ,  96.7 ,   183.4 ,  94.3],
-[877.2  , 145.1  , 36.1 ,   56.9  ,  148.5,   50.5],
-[1453.1 , 556.4  , 49.3  ,  82.1  ,  169.4 ,  48.1]]
+  [16.1 ,   0.7 ,0.06   , 0.14 ,   0.56    ,0.09],
+  [567, 62.9   , 7.3 ,9.6, 25.4 ,   10.1],
+  [1078.4 , 183 ,64.1  ,  69.6   , 88.4   , 64.1],
+  [59.4   , 14.5  ,  6.1, 6.4,8.5 ,6.6],
+  [5672.6 , 234.7  , 88.7  ,  96.7 ,   183.4 ,  94.3],
+  [877.2  , 145.1  , 36.1 ,   56.9  ,  148.5,   50.5],
+  [1453.1 , 556.4  , 49.3  ,  82.1  ,  169.4 ,  48.1]]
 
 data = []
 for dataset, row in zip(datasets, rows):
@@ -71,10 +74,11 @@ p += coord_flip()
 p += geom_point(size=1.8)
 p += legend_none
 p += guides(shape="FALSE", size="FALSE")
-p += axis_labels("", "Time (s, log)", "discrete", "log10", xkwargs=dict(lim=map(esc, list(reversed(approaches)))), ykwargs=dict(breaks=[1, 60, 60*60, 3*60*60], labels=map(esc, ["1s", "1m", "1hr", "3hr"])))
+p += axis_labels("", "Time (s, log)", "discrete", "log10", 
+    xkwargs=dict(lim=map(esc, list(reversed(approaches)))),
+    ykwargs=dict(breaks=[1, 60, 60*60], labels=map(esc, ["1s", "1m", "1hr"])))
 ggsave("druntime.png", p, width=8, height=3.5, scale=scale)
 
-exit()
 
 
 
@@ -172,6 +176,7 @@ p += guides(shape="FALSE", size="FALSE")
 p += axis_labels("", "Time", "discrete", "continuous", 
     xkwargs=dict(lim=map(esc, labels[1:])),
     ykwargs=dict(breaks=[10*60, 20*60, 30*60], labels=map(esc, ["10m", "20min", "30min"])))
+p += ggtitle(esc("Training Runtime on FEC"))
 ggsave("runtime.png", p, width=8, height=3.5, scale=scale)
 
 
