@@ -19,11 +19,11 @@ where $name$ is the company name, $num\_emp$ is the number of employees in the c
 \end{figure}
 
 \subsection{Machine Learning and Dirty Data}
-We feel it is important to highlight a number of points when considering data cleaning in the machine learning context.
+It is important to highlight a number of points when considering data cleaning in the machine learning context.
 First, machine learning models are often robust to statistical noise and inherent variations in the dataset.  For this reason, our focus is not to reduce random noise; instead, our focus is to identify and address systematic errors due to invariant violations that lead to unforeseen biases in the model.  
 For example, records with a positive classification label are more likely to have NULL values in the training set.
+Figure \ref{fig:error} illustrates two examples of how this can affect a model.
 Second, while the notion of invariants is similar to integrity constraints in traditional relational data cleaning, the way that repairs are evaluated differ.  Relational data cleaning focuses on identifying a minimal set of repairs that resolve a set of constraint violations.  On the other hand, our goal is to improve the the downstream model test prediction accuracy.  These goals are not necessarily aligned, and by ignoring the downstream model, it is possible that traditional cleaning techniques perform cleaning operations that degrade the model accuracy.
-Finally, acquiring a clean dataset to evaluate traditional data cleaning algorithms~\cite{DBLP:journals/pvldb/AbedjanCDFIOPST16} is often challenging or impossible.  In contrast, test data is already available in data science applications, and our research explores how this data can be leveraged to identify and repair data errors.
 
 \subsection{Existing Approaches}
 \sys brings together generic, dataset-independent error detection with automatically learned repair strategies for ML applications.
@@ -32,7 +32,6 @@ We review how baseline techniques proposed in prior work that could apply to thi
 \vspace{0.5em}
 
 \noindent\textbf{Rule-based Repair: } 
-The traditional relational approach is to directly, and completely clean the relation.
 In the running example, suppose some of the values for $num\_emp$ are NULL and we want to train a classifier to predict $is\_successful$.
 We would define a domain integrity constraint $num\_emp \ne~NULL$, and then propose a set of repairs to satisfy this constraint.
 With no other information, this rule-based approach could in principle impute any non-null value from the domain to create a logically consistent relation.

@@ -1,46 +1,26 @@
 \section{Experiments}\label{s:exp}
 In this section, we present the results of our experiments.  We execute \sys on $12$ datasets based on three sets of real-world cases---machine learning competitions, data analysis pipelines, and \company---and report accuracy measures and end-to-end runtime.  Then, we present a series of micro-benchmarks that evaluate each of the modules of \sys.  Our goal is to understand the conditions where automated cleaning is able to accurately detect and repair data in a way that improves the held-out test accuracy. 
 
-In particular, we evaluate the following hypotheses:
-\begin{enumerate}
-    \item Compared to baselines, the cleaning operations selected by \sys result in a greater improvement to the downstream classification accuracy.
-    \item \sys automatically detects a large fraction (in comparison to hand-written rules) of the errors across several different datasets.
-    \item The optimizations that we design for \sys allow us to run at a reasonable wall clock time.
-\end{enumerate}
+In particular, we evaluate three hypotheses: 1) Compared to baselines, the cleaning operations selected by \sys result in a greater improvement to the downstream classification accuracy; 2) \sys automatically detects a large fraction (in comparison to hand-written rules) of the errors across several different datasets; and 3) The optimizations that we design for \sys allow us to run at a reasonable wall clock time.
 
-\subsection{Baselines and Methods}
-To the best of our knowledge, there does not exist a comparable general purpose ML+Data Cleaning system to \sys in industry or academia.
-We evaluate \sys against a number of baseline approaches inspired by solutions proposed in literature. 
+\subsubsection{Setup}
 
-\vspace{0.25em}\noindent\textbf{No Cleaning (NC): } We train a model without any modification to the training or test data.
-
-\vspace{0.25em}\noindent\textbf{Quantitative (Q): } We train a model where only the isolation forest over the numerical attributes is used to detect errors.
-Errors in both training and test are imputed with a mean value.
-
-\vspace{0.25em}\noindent\textbf{Integrity Constraint (IC): } We read through each dataset to identify a set of anomalous values for each non-numerical attribute on a best-effort basis.  We then codified these as integrity constraint rules, and corrected the identified errors using a statistical distortion minimization metric as in~\cite{prokoshyna2015combining}. Statistical distortion minimizes the statistical distance to some ideal distribution (e.g., Power Law or Gaussian). We set these distributions manually by inspecting the data when possible.
-
-\vspace{0.25em}\noindent\textbf{Quantitative + IC (Q+IC): } We use both the quantitative and integrity constraints for detection. For repair, we apply an imputation with a default value. For categorical and string-valued attributes, this the most frequent value. For numerical attributes, this is the mean value.
-
-\vspace{0.25em}\noindent\textbf{Best Single (Best-1): } We run \sys with $B=1$ and identify the  single best conditional repair.
-
-\vspace{0.25em}\noindent\textbf{Worst Single (Worst-1): } We run \sys with $B=1$ and identify the single worst conditional repair..
-
-\stitle{BC-3: } We run \sys with $B=3$.
-
-\stitle{BC-5: } We run \sys with $B=5$.
-
-
-\vspace{0.25em}
+To the best of our knowledge, there does not exist a comparable general purpose ML+Data Cleaning system to \sys in industry or academia.  We evaluate \sys against a number of baseline approaches inspired by solutions proposed in literature.   These baselines are described in the subsequent experimental subsections.
+We used the following setup for our experiments. 
 
 \stitle{Test Data: } For each of the datasets, we defined a 20\% held-out test dataset. We assumed that the labels in this test dataset were clean, as per the assumption in \sys. To avoid overfitting, we carefully designed the accuracy evaluation experiments for \sys by using a ``doubly'' held out test dataset: the test dataset used to optimize \sys is different from a completely unseen 20\% test dataset that is solely used to report the final prediction accuracy.
 Training is performed on the remaining 60\% of the data.
 
-\stitle{Models: } We used the \textsf{sklearn} Random Forest classifier.  The training procedure uses a set of standard featurizers (hot-one encoding for categorical data, bag-of-words for string data, numerical data as is) in a similar fashion as~\cite{DBLP:conf/sigmod/GokhaleDDNRSZ14}.  Note that these featurizers are used as part of the black-box training procedure and are distinct from those used in the detector generator library. 
+\stitle{Models: } We used the \textsf{sklearn} Random Forest classifier.  The training procedure uses a set of standard featurizers (hot-one encoding for categorical data, bag-of-words for string data, numerical data as is) in a similar fashion as~\cite{gokhale2014corleone}.  Note that these featurizers are used as part of the black-box training procedure and are distinct from those used in the detector generator library. 
 We describe hyper-parameter settings for each technique in the text of each experiment.
 As much as possible, we attempted to use the library default parameters.
 
 \stitle{Timing: } In all of our experiments, we used standard classification models and featurization techniques from Python \textsf{sklearn}.
 The classifiers were trained in Python 2.7 and timing experiments were run on an Amazon EC2 m4.16xlarge instance\footnote{64 virtual cpus and 256 GiB memory}.
+
+
+
+
 
 
 
@@ -50,34 +30,54 @@ The classifiers were trained in Python 2.7 and timing experiments were run on an
 \hline
 ML Competition& \#rows & \#cols & NC & Q &	IC & Q+IC &	Best-1 &	Worst-1 &	BC-3 & BC5 & Rel. Improvement\\
 \hline
-USCensus	&32561&15&0.85&	0.82&	0.86&	0.84&	0.87&	0.79&	0.88&	\blue{0.91} & +4.5\% \\
-Emergency &11176&9&	0.67&	0.72&	0.67&	0.72&	0.72&	0.66&	0.72&	\blue{0.75} & +4.7\%\\
-Sensor	&928991&5&0.92&	0.93&	0.92&	0.89&	0.92&	0.8&	\blue{0.94}&	0.94 & +1.3\%\\
-NFL	&46129&65&0.74&	0.74&	0.76&	0.75&	0.76&	0.74&	0.79&	\blue{0.82}& +5.1\%\\
-EEG	&2406&32&0.79&	0.82&	0.79&	0.83&	0.83&	0.7&	0.85&	\blue{0.89}& +6.8\%\\
-Titanic	&891&12&0.83&	0.72&	0.83&	0.76&	0.83&	0.69&	0.83&	\blue{0.84}& +1.1\%\\
-Housing	&1460&81&0.73&	0.76&	0.73&	0.77&	0.77&	0.65&	\blue{0.81}&	0.76& +5.1\% \\
-Retail	&541909&8&0.88&	0.88&	0.91&	0.91&	0.91&	0.87&	0.94&	\blue{0.95}& +4.3\% \\
+USCensus	&32561&15&0.85&	0.82&	0.86&	0.84&	0.87&	0.79&	0.88&	\pop{0.91} & +4.5\% \\
+Emergency &11176&9&	0.67&	0.72&	0.67&	0.72&	0.72&	0.66&	0.72&	\pop{0.75} & +4.7\%\\
+Sensor	&928991&5&0.92&	0.93&	0.92&	0.89&	0.92&	0.8&	\pop{0.94}&	0.94 & +1.3\%\\
+NFL	&46129&65&0.74&	0.74&	0.76&	0.75&	0.76&	0.74&	0.79&	\pop{0.82}& +5.1\%\\
+EEG	&2406&32&0.79&	0.82&	0.79&	0.83&	0.83&	0.7&	0.85&	\pop{0.89}& +6.8\%\\
+Titanic	&891&12&0.83&	0.72&	0.83&	0.76&	0.83&	0.69&	0.83&	\pop{0.84}& +1.1\%\\
+Housing	&1460&81&0.73&	0.76&	0.73&	0.77&	0.77&	0.65&	\pop{0.81}&	0.76& +5.1\% \\
+Retail	&541909&8&0.88&	0.88&	0.91&	0.91&	0.91&	0.87&	0.94&	\pop{0.95}& +4.3\% \\
 \hline
 \hline
 Data Analytics &\#rows & \#cols & NC & Q &	IC & Q+IC &	Best &	Worst &	BC-3 & BC5 & Rel. Improvement\\
 \hline
-FEC  & 6410678 & 18 & 0.62 & 0.53 & 0.61 & 0.57 & 0.71 & 0.51 & 0.74 & \blue{0.77} &  +8.4\% \\
-Restaurant (Multiclass) &758&4& 0.42 & 0.42 & 0.58 & 0.68 & \blue{0.62} & 0.36 & 0.61 & 0.60 & (1.61)\% \\
+FEC  & 6410678 & 18 & 0.62 & 0.53 & 0.61 & 0.57 & 0.71 & 0.51 & 0.74 & \pop{0.77} &  +8.4\% \\
+Restaurant (Multiclass) &758&4& 0.42 & 0.42 & 0.58 & 0.68 & \pop{0.62} & 0.36 & 0.61 & 0.60 & (1.61)\% \\
 \hline
 \hline
 Company X &\#rows & \#cols & NC & Q &	IC & Q+IC &	Best &	Worst &	BC-3 & BC5 & Rel. Improvement\\
 \hline
-Dataset 1 (AUC) &76684&6&0.60&0.60&0.60&0.60&0.61&0.59&0.66&\blue{0.69}& +13.3\% \\
-Dataset 2 (AUC) &83986&6&0.55&0.55&0.52&0.55&0.55&0.52&0.61&\blue{0.63}& +14.5\%\\
+Dataset 1 (AUC) &76684&6&0.60&0.60&0.60&0.60&0.61&0.59&0.66&\pop{0.69}& +13.3\% \\
+Dataset 2 (AUC) &83986&6&0.55&0.55&0.52&0.55&0.55&0.52&0.61&\pop{0.63}& +14.5\%\\
 \hline
 \end{tabular}
-\caption{End-to-end accuracy results for each dataset and experimental method. We report standard classification accuracy.  The right column summarizes the accuracy improvement relative to the best non BC-3/5 approach. \label{tab:accuracy}}
+\caption{End-to-end accuracy results for each dataset and experimental method. We report standard classification accuracy.  The right column summarizes the absolute accuracy improvement over the best non BC-3/5 approach.  The \company datasets have high class imbalances cause artificially high accuracy statistics,  so we report AUC statistics for those datasets instead.}
+\label{tab:accuracy}
 \end{table*}
 
 \subsection{End-to-End Accuracy}
 In our first experiment, we evaluated the accuracy of \sys compared to the baselines.
 We tried to minimize hyper-parameter tuning as much as possible to simulate a real-scenario where extensive tuning and parameter search might be expensive.
+
+\subsubsection{Methods}
+
+\stitle{No Cleaning (NC): } We train a model without any modification to the training or test data.
+
+\stitle{Quantitative (Q): } We train a model where only the isolation forest over the numerical attributes is used to detect errors.
+Errors in both training and test are imputed with a mean value.
+
+\stitle{Integrity Constraint (IC): } We read through each dataset to identify a set of anomalous values for each non-numerical attribute on a best-effort basis.  We then codified these as integrity constraint rules, and corrected the identified errors using a statistical distortion minimization metric as in~\cite{prokoshyna2015combining}. Statistical distortion minimizes the statistical distance to some ideal distribution (e.g., Power Law or Gaussian). We set these distributions manually by inspecting the data when possible.
+
+\stitle{Quantitative + IC (Q+IC): } We use both the quantitative and integrity constraints for detection. For repair, we apply an imputation with a default value. For categorical and string-valued attributes, this the most frequent value. For numerical attributes, this is the mean value.
+
+\stitle{Best Single (Best-1): } We run \sys with $B=1$ and identify the  single best conditional repair.
+
+\stitle{Worst Single (Worst-1): } We run \sys with $B=1$ and identify the single worst conditional repair..
+
+\stitle{BC-3: } We run \sys with $B=3$.
+
+\stitle{BC-5: } We run \sys with $B=5$.
 
 \subsubsection{ML Competition Datasets}\label{exp:comp}
 We downloaded 8 binary classification datasets from Kaggle competitions and benchmarks in the UCI ML repository.  
@@ -87,100 +87,29 @@ For this set of experiments, we used a single hyper-parameter setting for all th
 %\ewu{IMPORTANT: SOMEWHERE IN THE WRITING, WE FORGOT TO TALK ABOUT HYPERPARAMETERS}
 We briefly describe each dataset and their errors below:
 
-\vspace{0.5em}\noindent\textbf{USCensus: } This dataset contains US Census records for adults and the goal is to predict  whether the adult earns more than $50,000$ dollars. It contains 32,561 records with 15 numerical and categorical attributes. Examples of data error include:
-\begin{lstlisting}
-#missing values
-40,Private,121772,Assoc-voc,11,
-Married-civ-spouse,Craft-repair,Husband, 
-Asian-Pac-Islander,Male,0,0,40,(*\orange{\bf{?}}*),>50K
-
-#coding inconsistency
-57,Local-gov,110417,HS-grad,9,
-Married-civ-spouse,Craft-repair,Husband,
-White,Male,(*\orange{\bf{99999}}*),0,40,United-States,>50K
-\end{lstlisting}
+\vspace{0.5em}\noindent\textbf{USCensus: } This dataset contains US Census records for adults and the goal is to predict  whether the adult earns more than $50,000$ dollars. It contains 32,561 records with 15 numerical and categorical attributes. This dataset contained missing values and coding inconsistencies.
 
 \vspace{0.5em}\noindent\textbf{NFL: } This dataset contains play-by-play logs from US Football games. The dataset contains 46,129 records with 65 numerical, categorical, and string-valued attributes. Given the record, the classification objective is to determine whether the next play the team runs is a run or a pass play.
 The dataset contains a significant number of missing values and ``sentinel'' records that mark the end of a log sequence. The sentinel records do not signify a play but rather signify a timeout, end of quarter, or end of the game.
-\begin{lstlisting}
-#missing values
-"36",2015-09-10,"2015091000",1,1,(*\orange{\bf{NA}}*),"15:00",
-15,3600,0,"NE",35,35,0,0,0,(*\orange{\bf{NA}}*),"PIT","NE"(*\blue{\bf{....}}*)
-
-#sentinel record
-"189710",2016-01-03,"2016010310",10,2,NA,"00:00",
-0,1800,8,"GB",17,17,0,-1,0,0,"",NA,"END(*~*)QUARTER2"
-,1,0,0,0,NA, NA,NA,0,"Quarter(*~*)End"(*\blue{\bf{....}}*)
-\end{lstlisting}
 
 \vspace{0.5em}\noindent\textbf{EEG: } This is a dataset of EEG recordings. 
 The training data is organized into ten minute EEG clips labeled "Preictal" for pre-seizure data segments, or "Interictal" for non-seizure data segments. 
 There are 2406 records each of which is a variable-length time-series of 16 attributes. We featurize this dataset into records of 32 attributes--the mean and variance over the length of the time-series. 
-This dataset primarily contains numerical outliers, the clips have spurious readings as follows:
-\begin{lstlisting}
-#Time t=46 Normal
-[-41.53080368041992, -9.605541229248047, 
--55.74542999267578, 17.77084732055664,
--1.6866581439971924, 38.86453628540039, 
-17.108707427978516, 26.545927047729492, 
--12.696817398071289, -12.703478813171387, 
-56.78707504272461, 3.2556533813476562, 
-22.688213348388672, -25.728403091430664, 
--10.142332077026367, -11.585281372070312]
+This dataset primarily contains numerical outliers, the clips have spurious readings.
 
-#Time t=47 Abnormal
-(*\orange{[0, 8, -10, 9, 18, 6, -8, -41, -26, -72, -19, 70, 129, 53, 31, -11]}*)
-\end{lstlisting}
+\vspace{0.5em}\noindent\textbf{Emergency: } This dataset contains records on 911 calls from Pennsylvania. There are 111,766 records with 9 attributes. Given the record, the classification challenge is to determine whether the emergency service response time will be less than $5 min$. This dataset contains missing values, and spurious locations not served by the 911 center.
 
-\vspace{0.5em}\noindent\textbf{Emergency: } This dataset contains records on 911 calls from Pennsylvania. There are 111,766 records with 9 attributes. Given the record, the classification challenge is to determine whether the emergency service response time will be less than $5 min$. This dataset contains missing values, and spurious locations not served by the 911 center:
-\begin{lstlisting}
-#missing values
-41.1671565,-76.8740304,MAIN;(*\orange{\bf{--}}*); Station 308A;
-2016-01-02 @ 13:01:30;,17752,EMS: UNKNOWN MEDICAL
-EMERGENCY,2016-01-02 13:06:00,(*\orange{\bf{--}}*),MAIN,1
+\vspace{0.5em}\noindent\textbf{Sensor: } The Intel sensor dataset~\cite{data, DBLP:journals/pvldb/0002M13, wang1999sample} contains 928,991 temperature, humidity, and light sensor readings a sensor deployment. The classification task is to predict whether the readings came from a particular sensor (sensor 49). This dataset primarily has numerical outliers.
 
-#spurious location (outisde 100 mile radius)
-(*\orange{\bf{41.1671565,-76.8740304,}}*)MAIN;(*\orange{\bf{--}}*); Station 308A;
-2016-01-02 @ 13:01:30;,17752,EMS: UNKNOWN MEDICAL 
-EMERGENCY,2016-01-02 13:06:00,(*\orange{\bf{--}}*),MAIN,1
-\end{lstlisting}
+\vspace{0.5em}\noindent\textbf{Titanic: } This dataset contains 891 records from the Titanic manifest with 12 attributes. The classification objective is to determine whether the passenger survived or not. There are missing values and string formatting errors.
 
-\vspace{0.5em}\noindent\textbf{Sensor: } The Intel sensor dataset~\cite{} contains 928,991 temperature, humidity, and light sensor readings a sensor deployment. The classification task is to predict whether the readings came from a particular sensor (sensor 49). This dataset has numerical outliers:
-\begin{lstlisting}
-#Normal Record
-49  -0.999750  12.862100  10.368300  10.438300  
-11.669900 (*\orange{\bf{13.493100}}*)  13.342300  8.041690  
-8.739010  26.225700  59.052800
-
-#Spurious Record
-49  1.175188  12.279100  8.849360  9.005830  
-10.111700  (*\orange{\bf{378.750000}}*)  19.319400  15.916200  
-37.631400  27.150100  53.403700
-\end{lstlisting}
-
-\vspace{0.5em}\noindent\textbf{Titanic: } This dataset contains 891 records from the Titanic manifest with 12 attributes. The classification objective is to determine whether the passenger survived or not. There are missing values and string formatting errors:
-
-\begin{lstlisting}
-#missing values
-891,0,3,"Dooley, Mr. Patrick",male,
-32,0,0,370376,7.75,(*\orange{\bf{--}}*),Q
-\end{lstlisting}
 
 \vspace{0.5em}\noindent\textbf{Housing: } The housing dataset contains 1460 records and 81 attributes of house price listings. The classification objective is to determine whether the listed house will be sold above 750000. 
-This dataset contains missing values as well as numerical outliers:
-\begin{lstlisting}
-#missing values
-(*\blue{\bf{....}}*)204,228,0,0,0,(*\orange{\bf{NA,NA}}*),Shed,350,11,2009,WD,
-Normal,200000
-\end{lstlisting}
+This dataset contains missing values as well as numerical outliers.
 
 \vspace{0.5em}\noindent\textbf{Retail: } The online retail dataset contains 541,909 records of online retail purchases with 8 attributes. The classification objective is to predict whether the purchase occurred in the United Kingdom.
-This dataset contains numerical errors where some purchased quantities are reported as negative:
-\begin{lstlisting}
-#outliers
-C536391,21980,PACK OF 12 RED RETROSPOT TISSUES
-,(*\orange{\bf{-24}}*),12/1/10 10:24,0.29,17548,United Kingdom
-\end{lstlisting}
+This dataset contains numerical errors where some purchased quantities are reported as negative.
+
 
 \vspace{1em}
 The first set of rows in Table \ref{tab:accuracy} present the predictive accuracy of models trained with \sys on the completely unseen test data.  In all experiments, the model trained with one of the \sys  approaches was the most accurate.
@@ -202,37 +131,6 @@ The accuracy results are presented in the second set of rows in Table \ref{tab:a
 
 \vspace{0.5em}\noindent\textbf{Federal Election Commission Contributions: } The FEC provides a dataset of election contributions of 6,410,678 records with 18 numerical, categorical and string valued attributes. This dataset has a number of errors. There are missing values, formatting issues (where records have the wrong number of fields causing misaligment in parsing), and numerical outliers (negative contributions).
 
-\begin{lstlisting}
-#missing values
-C00458844,"P60006723","Rubio, Marco","RUCINSKI,
-ROBERT","APO","AE","090960009","US ARMY",
-"PHYSICIAN",100,08-MAR-16,(*\orange{\bf{``''}}*),(*\orange{\bf{``''}}*),(*\orange{\bf{``''}}*),"SA17A",
-"1082559","SA17.1074981","P2016"
-
-#misalignment
-C00458844, "P60006723", (*\orange{\bf{"Rubio", "Marco"}}*), "BRIZOLIS",
-" DEMETRI MR.", "RANCHO SANTA FE", "CA", 
-"920674357", "RETIRED", "RETIRED", 100, 
-28-OCT-15, "", "", "", "SA17A", "1047126", 
-"SA17.851920", "P2016"
-
-#rejected contributions double recorded
-C00458844,"P60006723","Rubio, Marco","SWAID, 
-SWAID N. DR.","BIRMINGHAM","AL","352660827",
-"NEWOLOGICAL SURGERY ASSOCIATES","PHYSICIAN",
-(*\orange{\bf{-400}}*),28-DEC-15, "REDESIGNATION TO GENERAL","X",
-"REDESIGNATION TO GENERAL","SA17A",
-"1047126","SA17.892835B","P2016"
-
-C00458844,"P60006723","Rubio, Marco","SWAID, 
-SWAID N. DR.","BIRMINGHAM","AL","352660827",
-"NEWOLOGICAL SURGERY ASSOCIATES","PHYSICIAN",
-(*\orange{\bf{400}}*),28-DEC-15, 
-"REDESIGNATION FROM PRIMARY","X", 
-"REDESIGNATION FROM PRIMARY","SA17A",
-"1047126","SA17.918421","G2016"
-\end{lstlisting}
-
 Our classification objective was to determine whether the contribution would be above or below $100$ dollars. Due to the severity of the errors in the dataset, there is nearly a 15\% difference between the prediction accuracy of a classifier with and without \sys.
 Furthermore, a purely quantitative approach is not useful for this dataset.
 An integrity constraint based method improves accuracy but the automatic imputations are unreliable on this data.
@@ -247,29 +145,20 @@ In all, \sys with a budget of 5 improves accuracy 8.4\% over the best single cle
 We designed a multi-class classification task to see if we could predict the city from record.
 One of the major inconsistencies was additional attributes appended to the restaurant category.
 
-\begin{lstlisting}
-campanile,624 s. la brea ave.,los angeles,
-american
-
-grill  the,9560 dayton way,beverly hills,
-american (*\orange{\bf{(traditional)}}*)
-\end{lstlisting}
-
 On this dataset, we see a negative result from \sys. Our test error decreases as we increase the number of selected cleaners. We speculate this is due to overfitting due to the extremely small size of the dataset  ($<1000 records$) combined with the expressiveness of the classifiers model.
 
 \subsubsection{Company X Experiments}
 We applied \sys to two datasets from Company X of 76,684 records and 83,986 records respectively (each with 6 attributes). 
 All of these attributes were inferred as categorical by our type inference module.
 What made these datasets interesting was a significant class imbalance, where most records were labeled $0$ and few were labeled $1$.
-Because of this imbalance, we report the AUC classification score rather than the accuracy.
+Because of this imbalance, the accuracy of simply predicting the common label performs nearly perfectly, and we instead report the AUC classification score.  Furthermore, due to data confidentially, we were only able to acquire aggregate statistics about the data cleaning results.
 
-In these two datasets, we discovered missing values and word2vec errors. 
-In Dataset 1, 40,164 of the rows had some type of error (either missing values or word2vec in at least one attribute).
-In Dataset 2, 80,168 of the rows had some type error (either missing values or word2vec in at least one attribute).
-The last set of rows in Table \ref{tab:accuracy} show the AUC accuracy of the different approaches.
-\sys with 5 selected cleaners achieves an absolute improvement of 8\% in dataset 1 and 2 over the best single cleaner.
-It achieves a 9\% absolute improvement over no cleaning in dataset 1 and a 8\% improvement in dataset 2.
-We found an interesting trend where the integrity constraint approach reduced accuracy.
+In these two datasets, the primary errors were detected by the missing values and word2vec featurizers. 
+In Dataset 1, over 50\% (40,164) of the rows contain some type of error (either a missing values or anomalous categorical value in at least one attribute).
+Similarly, over $95\%$ of Dataset 2 (80,168  rows) contained at least one instance of missing value or anomalous categorical errors.  The detailed AUC results are reported in the last set of rows in  Table \ref{tab:accuracy}.
+\sys with 5 selected cleaners achieves an absolute improvement of 8\% ($14\%$ relative improvement) in both datasets over the next best non-\sys alternative, and a slightly larger improvement over not cleaning the dataset at all.
+% It achieves a 9\% absolute improvement over no cleaning in dataset 1 and a 8\% improvement in dataset 2.
+Interestingly, we found that the integrity constraint approach (IC) reduced the AUC results in dataset 2.
 
 
 \begin{figure}[t]
@@ -297,7 +186,7 @@ The number of records that can be processed per second on 16 cores for predictio
 \begin{figure}[t]
 \centering
  \includegraphics[width=\columnwidth]{exp/daccuracy.png}
- \caption{F1 scores for 8 Machine Learning competition datasets using different error detection techniques. We compare against Isolation Forest with no featurizers (ISO), Minimum Covariance Determinants (MCD), and hand-written Custom Rules.  We evaluate \sys with the quantitative and missing value featurizers (BC(Q,MV)) and with quantitative, missing value and word embedding featurizers (BC(Q,MV,NN)).  \sys achieves up to 81\% accuracy and is competitive with hand-written rules, and the word embedding features significantly improve the detector accuracy.
+ \caption{ \sys achieves up to 81\% accuracy and is competitive with hand-written rules, and the word embedding features significantly improve the detector accuracy.
  \label{fig:derror}}
 \end{figure}
 
@@ -308,15 +197,11 @@ The number of records that can be processed per second on 16 cores for predictio
  \label{fig:druntime}}
 \end{figure}
 
-\subsection{Micro-Benchmarks}
-Next, we evaluate the different components of \sys in terms of accuracy and runtime.
+\subsection{Detector Micro-Benchmarks}
 
-\subsubsection{Detectors}
-The first component that we evaluate are the detectors. We design a set of automatic error detectors based on heuristics, statistical criteria, and the word2vec neural network. We first measure its accuracy against hand-written detection scripts, and other quantitative outlier detection techniques (Isolation Forests and Minimum Covariance Determinants).
-\sys internally uses an Isolation Forest combined with other error detectors, so we evaluate \sys with and without certain detection modules.
-We measure accuracy w.r.t the alternatives with the F1 accuracy measure.
+We used a set of error detectors based on heuristics, statistical methods, the word2vec neural network, and evaluated their accuracy and runtime as compared to hand crafted rules (Custom).  We evaluated typical outlier detection techniques such as Minimum Covariance Determinants (MCD) and Isolation Forests with naive hot-one encoding for categorical attributes (ISO).  We also evaluated \sys by incrementally the set of featurizers that are used: quantitative only (BC-Q), with  missing value featurizers (BC-Q,MV), with word embeddings (BC-all).  We report the F1 score on the 8 machine learning datasets.
 
- Figure  \ref{fig:derror} shows that the final detector in \sys achieves up to 81\% of the accuracy of hand-written rules on the competition datasets.
+Figure  \ref{fig:derror} shows that the final detector in \sys achieves up to 81\% of the accuracy of hand-written rules on the competition datasets.
 Confirming the results of Abedjan et al.~\cite{DBLP:journals/pvldb/AbedjanCDFIOPST16}, we found that a 
 purely quantitative approach does not perform well in comparison to the rule-based approach on these datasets (Isolation Forest alone and MCD).
 However, results are significantly improved when combined with heuristics that detect missing values. 
@@ -326,7 +211,7 @@ The datasets are already in a structured schema and the only thing that an analy
 Presumably these datasets were also previously cleaned and extracted before they were publicly released.
 Our initial experiment showed that for this class of datasets, reasonably accurate error detection is possible with minimal supervision and tuning.
 
- Figure  \ref{fig:druntime} shows the runtime of each of the approaches.
+ Figure  \ref{fig:druntime} shows the total runtime (training and test) of each  approach.
  We first apply the Minimum Covariance Determinant approach (MCD) to the set of records featurized ``naively''--numerical values, hot-one encoded categorical values, and bag-of-words for strings.
  We found that MCD was very expensive since this featurization increases the dimensionality significantly and MCD needs to compute an $d^2$ covariance matrix.
  Next, we apply the Isolation Forest to the same featurization.
@@ -347,8 +232,9 @@ Our initial experiment showed that for this class of datasets, reasonably accura
  \label{fig:opt}}
 \end{figure}
  
- \subsubsection{Repair Selector Optimizations}
- Next, we evaluate the selector optimizations. We proposed two systems optimizations to the boosting algorithm: (1) materialization, and (2) indexing.
+ \subsection{Repair Micro-Benchmarks }
+ 
+ \stitle{Repair Selector Optimizations:} We proposed two systems optimizations to the boosting algorithm: (1) materialization, and (2) indexing.
  In this set of experiments, we use FEC dataset and apply no parallelism.
  Figure \ref{fig:opt} plots the runtime of the repair selector as a function of the number of cleaners to select (i.e., B).
  Without any optimization, for $B=1$ the repair selector requires 2754 seconds and for $B=5$ requires 14002 seconds.
@@ -365,7 +251,7 @@ Our initial experiment showed that for this class of datasets, reasonably accura
  \label{fig:learning}}
 \end{figure}
  
- \subsubsection{Repair Selector Overfitting}
+ \stitle{Overfitting: }
  One concern with the repair selector is overfitting. We evaluate to what extent, \sys overfits in Figure \ref{fig:learning}, where we plot the learning curves (accuracy as a function of the number of cleaners $B$).
  We try three different classification models, random forests, SVMs, and logistic regression.
  For all of the models we see similar results, where there is an optimal $B$ to select after which \sys overfits.

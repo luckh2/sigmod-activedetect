@@ -79,7 +79,7 @@ The basic runtime of the algorithm is polynomial in both the number of cleaning 
 The time complexity of Boost-and-Clean is $\mathbf{O}(k^2 N_{test} + k N_{train})$, where $k$ is the number of data cleaning operations, $N_{test}$ is the number of test tuples, and $N_{train}$ is the number of training tuples.
 \end{proposition}
 
-Boosting is well-understood statistically, and we can further bound the error on our clean test set (follows from~\cite{schapire2003boosting}). This requires the application of the weak learning assumption which means that for any weighting of the test set, we can find one library component that classifies better than random guessing. 
+Boosting is well-understood statistically, and we can further bound the error on our clean test set (follows from~\cite{schapire2003boosting}). This requires the application of the weak learning assumption which means that for any weighting of the test set, we can find one library component that classifies better than random guessing. This assumption is a theoretical assumption needed for the formal guarantee. Even if this assumption does not hold, \sys will still identify $B$ cleaning operations.
 
 \begin{proposition}[Error Bound]
 Assuming that the weak learning assumption holds, for a budget of $B$ cleaning operations, the error rate of Boost-and-Clean on the test dataset decreases as $\mathbf{O}(e^{-2B})$.
