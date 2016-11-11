@@ -22,7 +22,7 @@ rows = [[0.24 , 0.39  , 0.34   , 0.84   , 0.93  ,  1],
 [0.01  ,  0.03   , 0.04   , 1  , 0.98   , 1],
 [0.66  ,  0.61  ,  0.62  ,  0.82  ,  0.94 ,   1]]
 datasets = ['Census', 'Housing', 'Sensor', 'NFL', 'Titanic', 'Retail' , 'Emergency', 'EEG']
-approaches = ['MCD', 'ISO', 'BC-Q', 'BC-Q,MV', 'BC-Q,MV,NN', 'Custom Rules']
+approaches = ['MCD', 'ISO', 'BC-Q', 'BC-Q,MV', 'BC-all', 'Custom']
 
 data = []
 for dataset, row in zip(datasets, rows):
@@ -41,13 +41,13 @@ legend_none += theme(**{
 p = ggplot(data, aes(x='key', y='val', color='key', shape='key'))
 p += facet_wrap("~dataset", ncol=4)
 p += coord_flip()
-p += geom_point(size=1.8)
+p += geom_point(size=2.5)
 p += guides(shape="FALSE", size="FALSE")
 p += axis_labels("", "F1 Score", "discrete", "continuous", 
     xkwargs=dict(lim=map(esc, list(reversed(approaches)))), 
     ykwargs=dict(lim=[0,1], breaks=[0, 0.25, .5, .75, 1], labels=map(esc, ["0", ".25", ".5", ".75", "1"])))
 p += legend_none
-ggsave("daccuracy.png", p, width=8, height=3.5, scale=scale)
+ggsave("daccuracy.png", p, width=8, height=4, scale=scale)
 
 
 
@@ -71,13 +71,13 @@ data = fold(data, approaches)
 p = ggplot(data, aes(x='key', y='val', color='key', shape='key'))
 p += facet_wrap("~dataset", ncol=4)
 p += coord_flip()
-p += geom_point(size=1.8)
+p += geom_point(size=2.5)
 p += legend_none
 p += guides(shape="FALSE", size="FALSE")
 p += axis_labels("", "Time (s, log)", "discrete", "log10", 
     xkwargs=dict(lim=map(esc, list(reversed(approaches)))),
     ykwargs=dict(breaks=[1, 60, 60*60], labels=map(esc, ["1s", "1m", "1hr"])))
-ggsave("druntime.png", p, width=8, height=3.5, scale=scale)
+ggsave("druntime.png", p, width=8, height=4, scale=scale)
 
 
 
