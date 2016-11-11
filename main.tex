@@ -132,8 +132,11 @@
 \definecolor{darkblue}{rgb}{0.1,0.1,0.5}
 \definecolor{orange}{RGB}{237,125,49}
 \definecolor{blue}{RGB}{68,114,196}
+\definecolor{pop}{RGB}{0,21,245}
+
 \newcommand{\blue}[1]{{\textcolor{blue}{{\bf #1}}\xspace}}
 \newcommand{\orange}[1]{{\textcolor{orange}{{\bf #1}}\xspace}}
+\newcommand{\pop}[1]{{\textcolor{pop}{{\textit{\textbf{#1}}}}\xspace}}
 
 
 
@@ -164,16 +167,14 @@
 \maketitle
 
 \begin{abstract}
-Companies are increasingly employing sophisticated machine learning models, which can be highly sensitive to data error.
-Training data are often integrated from a variety of sources and are susceptible to inconsistencies--biases which propagate to predictions.
-Automatically detecting and repairing such data is in general very challenging, but we leverage the key insight that we can often query a relatively clean test dataset to evaluate the improvement in predication accuracy of a proposed cleaning operations.
-We present a system called \sys that utilizes this insight by optimizing over a set of possible conditional data cleaning operations (detector-repair tuples) by casting the problem as statistical boosting.
-\sys provides a library of dataset-independent error detectors
-based on deterministic heuristics and statistical criteria. 
-To better detect errors in categorical attributes, one of the modules in this library is a novel anomaly detector based on the Word2Vec Neural Network architecture.
-Once the errors are detected, \sys ``hedges its bets'' by selected an ensemble of models trained with different repair strategies for the detected error.
-We evaluated \sys on a collection of datasets from machine learning competitions, real-world data analyses, and datasets from \company, and found up-to 9\% improvements in absolute prediction accuracy. 
-We demonstrate how we can parallelize the inner-loop of the boosting operation, and on a 16-core machine, \sys achieves a 9.7x speedup.
+Predictive models based on machine learning can be highly sensitive to data error.
+Training data are often combined from a variety of different sources, each susceptible to different types of inconsistencies, and as new data stream in during prediction time, the model may encounter previously unseen inconsistencies.
+An important class of such inconsistencies are {\it domain value violations} that occur when an attribute value is outside of an allowed domain.
+We explore automatically detecting and repairing such violations by leveraging the often available clean test labels to determine whether a given detection and repair combination will improve model accuracy.
+We present \sys which automatically selects an ensemble of error detection and repair combinations using statistical boosting.
+\sys selects this ensemble from an extensible library that is pre-populated general detection functions, including a novel detector based on the Word2Vec deep learning model, which detects errors across a diverse set of domains.
+Our evaluation on a collection of 12 datasets from Kaggle, the UCI repository, real-world data analyses, and production datasets that show that \sys can increase absolute prediction accuracy by up to 9\% over the best non-ensembled alternatives.
+Our optimizations including parallelism, materialization, and indexing techniques show a $22.2\times$ end-to-end speedup on a 16-core machine.  \sys is readily available at {\bf anonymized for submission}.
 \end{abstract}
 
 
@@ -213,7 +214,7 @@ We demonstrate how we can parallelize the inner-loop of the boosting operation, 
 \bibliographystyle{abbrv}
 \bibliography{ref} 
 \normalsize \selectfont
-%\appendix
-%\input{appendix.tex}
+\appendix
+\input{appendix.tex}
 
 \end{document}

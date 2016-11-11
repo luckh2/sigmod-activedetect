@@ -1,0 +1,126 @@
+
+\vspace{0.5em}\noindent\textbf{USCensus: } This dataset contains US Census records for adults and the goal is to predict  whether the adult earns more than $50,000$ dollars. It contains 32,561 records with 15 numerical and categorical attributes. This dataset contained missing values and coding inconsistencies.
+Examples of data error include:
+\begin{lstlisting}
+#missing values
+40,Private,121772,Assoc-voc,11,
+Married-civ-spouse,Craft-repair,Husband, 
+Asian-Pac-Islander,Male,0,0,40,(*\orange{\bf{?}}*),>50K
+
+#coding inconsistency
+57,Local-gov,110417,HS-grad,9,
+Married-civ-spouse,Craft-repair,Husband,
+White,Male,(*\orange{\bf{99999}}*),0,40,United-States,>50K
+\end{lstlisting}
+
+
+\vspace{0.5em}\noindent\textbf{NFL: } This dataset contains play-by-play logs from US Football games. The dataset contains 46,129 records with 65 numerical, categorical, and string-valued attributes. Given the record, the classification objective is to determine whether the next play the team runs is a run or a pass play.
+The dataset contains a significant number of missing values and ``sentinel'' records that mark the end of a log sequence. The sentinel records do not signify a play but rather signify a timeout, end of quarter, or end of the game.
+\begin{lstlisting}
+#missing values
+"36",2015-09-10,"2015091000",1,1,(*\orange{\bf{NA}}*),"15:00",
+15,3600,0,"NE",35,35,0,0,0,(*\orange{\bf{NA}}*),"PIT","NE"(*\blue{\bf{....}}*)
+
+#sentinel record
+"189710",2016-01-03,"2016010310",10,2,NA,"00:00",
+0,1800,8,"GB",17,17,0,-1,0,0,"",NA,"END(*~*)QUARTER2"
+,1,0,0,0,NA, NA,NA,0,"Quarter(*~*)End"(*\blue{\bf{....}}*)
+\end{lstlisting}
+
+
+\vspace{0.5em}\noindent\textbf{EEG: } This is a dataset of EEG recordings. 
+The training data is organized into ten minute EEG clips labeled "Preictal" for pre-seizure data segments, or "Interictal" for non-seizure data segments. 
+There are 2406 records each of which is a variable-length time-series of 16 attributes. We featurize this dataset into records of 32 attributes--the mean and variance over the length of the time-series. 
+This dataset primarily contains numerical outliers, the clips have spurious readings.
+\begin{lstlisting}
+#Time t=46 Normal
+[-41.53080368041992, -9.605541229248047, 
+-55.74542999267578, 17.77084732055664,
+-1.6866581439971924, 38.86453628540039, 
+17.108707427978516, 26.545927047729492, 
+-12.696817398071289, -12.703478813171387, 
+56.78707504272461, 3.2556533813476562, 
+22.688213348388672, -25.728403091430664, 
+-10.142332077026367, -11.585281372070312]
+
+#Time t=47 Abnormal
+(*\orange{[0, 8, -10, 9, 18, 6, -8, -41, -26, -72, -19, 70, 129, 53, 31, -11]}*)
+\end{lstlisting}
+
+\vspace{0.5em}\noindent\textbf{Sensor: } The Intel sensor dataset contains 928,991 temperature, humidity, and light sensor readings a sensor deployment. The classification task is to predict whether the readings came from a particular sensor (sensor 49). This dataset primarily has numerical outliers.
+\begin{lstlisting}
+#Normal Record
+49  -0.999750  12.862100  10.368300  10.438300  
+11.669900 (*\orange{\bf{13.493100}}*)  13.342300  8.041690  
+8.739010  26.225700  59.052800
+
+#Spurious Record
+49  1.175188  12.279100  8.849360  9.005830  
+10.111700  (*\orange{\bf{378.750000}}*)  19.319400  15.916200  
+37.631400  27.150100  53.403700
+\end{lstlisting}
+
+\vspace{0.5em}\noindent\textbf{Titanic: } This dataset contains 891 records from the Titanic manifest with 12 attributes. The classification objective is to determine whether the passenger survived or not. There are missing values and string formatting errors.
+
+\begin{lstlisting}
+#missing values
+891,0,3,"Dooley, Mr. Patrick",male,
+32,0,0,370376,7.75,(*\orange{\bf{--}}*),Q
+\end{lstlisting}
+
+\vspace{0.5em}\noindent\textbf{Housing: } The housing dataset contains 1460 records and 81 attributes of house price listings. The classification objective is to determine whether the listed house will be sold above 750000. 
+This dataset contains missing values as well as numerical outliers.
+\begin{lstlisting}
+#missing values
+(*\blue{\bf{....}}*)204,228,0,0,0,(*\orange{\bf{NA,NA}}*),Shed,350,11,2009,WD,
+Normal,200000
+\end{lstlisting}
+
+\vspace{0.5em}\noindent\textbf{Retail: } The online retail dataset contains 541,909 records of online retail purchases with 8 attributes. The classification objective is to predict whether the purchase occurred in the United Kingdom.
+This dataset contains numerical errors where some purchased quantities are reported as negative.
+
+\begin{lstlisting}
+#outliers
+C536391,21980,PACK OF 12 RED RETROSPOT TISSUES
+,(*\orange{\bf{-24}}*),12/1/10 10:24,0.29,17548,United Kingdom
+\end{lstlisting}
+
+\vspace{0.5em}\noindent\textbf{Federal Election Commission Contributions: } The FEC provides a dataset of election contributions of 6,410,678 records with 18 numerical, categorical and string valued attributes. This dataset has a number of errors. There are missing values, formatting issues (where records have the wrong number of fields causing misaligment in parsing), and numerical outliers (negative contributions).
+
+\begin{lstlisting}
+#missing values
+C00458844,"P60006723","Rubio, Marco","RUCINSKI,
+ROBERT","APO","AE","090960009","US ARMY",
+"PHYSICIAN",100,08-MAR-16,(*\orange{\bf{``''}}*),(*\orange{\bf{``''}}*),(*\orange{\bf{``''}}*),"SA17A",
+"1082559","SA17.1074981","P2016"
+
+#rejected contributions double recorded
+C00458844,"P60006723","Rubio, Marco","SWAID, 
+SWAID N. DR.","BIRMINGHAM","AL","352660827",
+"NEWOLOGICAL SURGERY ASSOCIATES","PHYSICIAN",
+(*\orange{\bf{-400}}*),28-DEC-15, "REDESIGNATION TO GENERAL","X",
+"REDESIGNATION TO GENERAL","SA17A",
+"1047126","SA17.892835B","P2016"
+\end{lstlisting}
+
+\vspace{0.5em}\noindent\textbf{Restaurant Dataset: } The restaurant dataset has 758 distinct records and 4 attributes. This dataset has typically been used as a benchmark for entity resolution since records are duplicated with minor inconsistencies.
+We designed a multi-class classification task to see if we could predict the city from record.
+One of the major inconsistencies was additional attributes appended to the restaurant category.
+
+\begin{lstlisting}
+campanile,624 s. la brea ave.,los angeles,
+american
+
+grill  the,9560 dayton way,beverly hills,
+american (*\orange{\bf{(traditional)}}*)
+\end{lstlisting}
+
+
+\vspace{0.5em}\noindent\textbf{Housing: } The housing dataset contains 1460 records and 81 attributes of house price listings. The classification objective is to determine whether the listed house will be sold above 750000. 
+This dataset contains missing values as well as numerical outliers.
+
+\begin{lstlisting}
+#missing values
+(*\blue{\bf{....}}*)204,228,0,0,0,(*\orange{\bf{NA,NA}}*),Shed,350,11,2009,WD,
+Normal,200000
+\end{lstlisting}

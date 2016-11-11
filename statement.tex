@@ -42,7 +42,7 @@ Each repair function $f_i \in \mathcal{F}$ is a function that takes a record as 
 
 {\it Data repairs} modify the values of a training record in response to a detected error (due to a predicate).  These repair functions are free to modify the record's features, label, or simply delete the record from the training dataset.  
 
-{\it Prediction repairs}, on the other hand, take as input the non-transformed record along with the classifier prediction, and replaces the prediction with a default value.  This is useful when the input record is too corrupted to provide a reliable prediction.  For instance, the NFL play-by-play dataset describe in Section~\ref{s:experiments}, some input records contain almost all null attributes and it is more accurate to default the prediction to the most frequent label rather than attempting a repair.
+{\it Prediction repairs}, on the other hand, take as input the non-transformed record along with the classifier prediction, and replaces the prediction with a default value.  This is useful when the input record is too corrupted to provide a reliable prediction.  For instance, the NFL play-by-play dataset describe in Section~\ref{s:exp}, some input records contain almost all null attributes and it is more accurate to default the prediction to the most frequent label rather than attempting a repair.
 
 Note that this section formalizes an API for these operations and subsequent sections provide one instantiation of this library.
 
