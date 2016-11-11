@@ -79,25 +79,28 @@ The following script represents a conditional prediction repair that predicts $f
 \end{verbatim}}
 \end{example}
 
-\noindent Finally, let $\mathcal{L} = (l_1,\cdots,l_n)$ be a sequence of conditional data and prediction repairs that \sys generates. To apply the repairs, \sys first partitions the $\mathcal{L}$ into two subsequences $\mathcal{L}^d = (l_i \in \mathcal{L} | l_i$ is data repair$)$ and $\mathcal{L}^p = (l_i \in \mathcal{L} | l_i$ is prediction repair$)$.  During the training phase, we apply the data repairs in sequence over the training dataset prior to training the classifier:
+\noindent Finally, let $L = (l_1,\cdots,l_n)$ be a sequence of conditional data and prediction repairs that \sys generates. 
+$L$ is an element in a finite universe of possible repairs denoted by $\mathcal{L}=\mathcal{D}\times\mathcal{F}$.
+To apply the repairs, \sys first partitions the $L$ into two subsequences $L^d = (l_i \in L | l_i$ is data repair$)$ and $L^p = (l_i \in L | l_i$ is prediction repair$)$.  During the training phase, we apply the data repairs in sequence over the training dataset prior to training the classifier:
 \begin{align}
-(X'_{train}, Y'_{train}) = \{\mathcal{L}^d(r, r) | r \in (X_{train}, Y_{train}) \}\\
+(X'_{train}, Y'_{train}) = \{L^d(r, r) | r \in (X_{train}, Y_{train}) \}\\
 C = train((X'_{train}, Y'_{train})\\
-\mathcal{L}^d(r, r) = l_k(l_{k-1}(\cdots l_1(r, r), r) r) | l_i \in \mathcal{L}^d
+L^d(r, r) = l_k(l_{k-1}(\cdots l_1(r, r), r) r) | l_i \in L^d
 \end{align}
 
-Finally, \sys constructs the final classifier $C_{\mathcal{L}}$ by combining the prediction repairs $\mathcal{L}^p$ with the trained classifier $C$.  It first identifies the last prediction repair $l^* \in \mathcal{L}^p$ whose predicate matches the test record.  
-$$l^* = \argmax_{l_i \in \mathcal{L}^p \wedge l_i(r) = true} i$$
+Finally, \sys constructs the final classifier $C_{L}$ by combining the prediction repairs $L^p$ with the trained classifier $C$.  It first identifies the last prediction repair $l^* \in L^p$ whose predicate matches the test record.  
+$$l^* = \argmax_{l_i \in L^p \wedge l_i(r) = true} i$$
 If no such prediction repair is found, \sys  returns the classifier prediction on the cleaned record, otherwise it applies $l^*$:
-$$C_{\mathcal{L}}(r) = \begin{cases}
-    C(\mathcal{L}^d(r, r))& \text{if } l^*\textrm{\ not\ found}\\
-    l^*(\mathcal{L}^d(r, r), r) & \text{otherwise}
+$$C_{L}(r) = \begin{cases}
+    C(L^d(r, r))& \text{if } l^*\textrm{\ not\ found}\\
+    l^*(L^d(r, r), r) & \text{otherwise}
 \end{cases}$$
 
 \subsection{Scope and Assumptions}
 As a class of errors, we focus on domain integrity constraints, i.e., a set of allowed values in each attribute's domain--an error being defined as an attribute value not in this set.
 Given a violation, we assume that each of the repair actions sets the attribute to an allowed value.
 This assumption avoids a fixed-point iteration, also called the ``chase algorithm''~\cite{aho1979theory}, which repairs that cause additional errors.
+This greatly simplifies the specification of $\mathcal{L}$ the set of possible data cleaning operations--in our experiments, $|\mathcal{L}|$ varied from $192$ to $1076$.
 Next, we assume that each record in a relation corresponds to a single example (features and labels), and the analyst wants to learn a classifier that predicts labels from features.
 Finally, we assume that the labels of the test data are clean since \sys relies on uncorrupted labels to estimate the model's accuracy.
 
@@ -105,8 +108,8 @@ Finally, we assume that the labels of the test data are clean since \sys relies 
 Given these assumptions, we define the repair selection problem:
 
 \begin{problem}[\sys Repair Selection]\sloppy
-Given $(X_{train}, Y_{train})$, $(X_{test}, Y_{test})$, a library of detector generators $\mathcal{D}$ and of repair functions $\mathcal{F}$, and a training procedure $train$, identify the optimal sequence $\mathcal{L}^*$ of $B$ conditional repairs such that the resulting classifier $C_{L^*}$  maximizes prediction accuracy on $(X_{test}, Y_{test})$:
-$$\mathcal{L}^* = \argmax_{L \in \mathcal{D}\times\mathcal{F}} acc(C_L)$$
+Given $(X_{train}, Y_{train})$, $(X_{test}, Y_{test})$, a library of detector generators $\mathcal{D}$ and of repair functions $\mathcal{F}$, and a training procedure $train$, identify the optimal sequence $L^*$ of $B$ conditional repairs such that the resulting classifier $C_{L^*}$  maximizes prediction accuracy on $(X_{test}, Y_{test})$:
+$$L^* = \argmax_{L \in \mathcal{D}\times\mathcal{F}} acc(C_L)$$
 \end{problem}
 
 Greedy solutions that select the top $B$ individual condition repairs will often fail since they might select highly correlated repairs (e.g., imputing a missing value with the mean, and the median).
