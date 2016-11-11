@@ -1,10 +1,12 @@
 \section{Conclusion and Future Work}
+We have shown that it is possible, for data cleaning applications, to develop an automated cleaning system by casting the problem into a statistical boosting framework.  We have prototyped this idea in a new open-source data cleaning system called \sys\footnote{The system can be accessed at XXX (Anonymized for submission}.
 We presented \sys, a new data cleaning system that detects errors in ML data and uses knowledge of the labels to adaptively select from a set of repair actions to maximize prediction accuracy.
-We evaluated results on 8 ML datasets on Kaggle and the UCI repository with real data errors and compare to statistical anomaly detection techniques, constraint-based techniques, and the best single cleaner performance. In all 8 datasets, \sys had a higher test accuracy than alternatives. We also demonstrate how we can parallelize the inner-loop of the boosting operation, and on a 16-core machine \sys achieves a 9.7x speedup. Similarly, we show that building an inverted index can speed up operator selection time by 2.3x.
+We evaluated results on 8 ML datasets on Kaggle and the UCI repository with real data errors and compare to statistical anomaly detection techniques, constraint-based techniques, and the best single cleaner performance. In all 8 datasets, \sys had a higher test accuracy than alternatives. In addition, we have evaluated \sys on production datasets at a data science company and shown that \sys can automatically detect data errors and improve the prediction accuracy of the company's downstream model by up to $14\%$.  We also demonstrate how we can parallelize the inner-loop of the boosting operation, and on a 16-core machine \sys achieves a 9.7x speedup. Similarly, we show that building an inverted index can speed up operator selection time by 2.3x.
 
 Our results are promising and they suggest several avenues for future research.
 First, clearly the biggest limitation is the need for direct accuracy measure.
 While this is available in many settings, we hope to relax this restriction in the future.
 This might require a more complex ensembling technique than boosting.
 Another interesting direction is considering infinite parametrized data cleaning libraries, and how selection from these libraries might work.
+We also hope to relax the need for test labels by allowing other proxies, make it faster, evaluate on more datasets.
 Of course, we also hope to continue industrial collaborations and real-world evaluations of our system.
