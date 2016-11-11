@@ -154,8 +154,8 @@
 %\input{coverletter.tex}
 
 %\title{ActiveClean: Progressive Data Cleaning For Convex Data Analytics}
-\title{\sys: Learning an Ensemble of Data Cleaning Models to Optimize Machine Learning}
-
+%\title{\sys: Learning an Ensemble of Data Cleaning Models to Optimize Machine Learning}
+\title{\sys: Automated Error Detection and Repair for Machine Learning}
 
 %\fontsize{9pt}{11pt}
 %\selectfont
@@ -164,14 +164,15 @@
 \maketitle
 
 \begin{abstract}
-As Machine Learning scales up to larger datasets, the challenges in handling dirty data during training and prediction become more significant.
-Currently, it requires painstaking human effort to monitor and maintain learning pipelines to ensure that prediction accuracy does not drop due to unexpected data.
-We present a system called \sys that automatically detects data errors, and selects repairs that maximally improve predictive performance of a user-defined ML model.
-Since repairs are potentially ambiguous, \sys ``hedge its bets'' by using an ensemble of models trained with different repair strategies.
-We describe materialization, indexing, and parallelization strategies that find this ensemble efficiently, and results suggest greater than an order-of-magnitude speedup.
+Companies are increasingly employing sophisticated machine learning models, which can be highly sensitive to data error.
+Training data are often integrated from a variety of sources and are susceptible to inconsistencies--biases which propagate to predictions.
+Automatically detecting and repairing such data is in general very challenging, but we leverage the key insight that we can often query a relatively clean test dataset to evaluate the improvement in predication accuracy of a proposed cleaning operations.
+We present a system called \sys that utilizes this insight by optimizing over a set of possible conditional data cleaning operations (detector-repair tuples) by casting the problem as statistical boosting.
 \sys provides a library of dataset-independent error detectors
-based on deterministic heuristics and statistical criteria. To better detect errors in categorical attributes, one of the modules in this library is a novel anomaly detector based on the Word2Vec Neural Network architecture.
-We evaluated \sys on a collection of datasets from machine learning competitions, real-world data analyses, and \company, and found that statistically improvements in prediction accuracy in comparison to baseline approaches on completely unseen test data. 
+based on deterministic heuristics and statistical criteria. 
+To better detect errors in categorical attributes, one of the modules in this library is a novel anomaly detector based on the Word2Vec Neural Network architecture.
+Once the errors are detected, \sys ``hedges its bets'' by selected an ensemble of models trained with different repair strategies for the detected error.
+We evaluated \sys on a collection of datasets from machine learning competitions, real-world data analyses, and datasets from \company, and found up-to 9\% improvements in absolute prediction accuracy. 
 We demonstrate how we can parallelize the inner-loop of the boosting operation, and on a 16-core machine, \sys achieves a 9.7x speedup.
 \end{abstract}
 
@@ -208,7 +209,7 @@ We demonstrate how we can parallelize the inner-loop of the boosting operation, 
 
 %\bibliographystyle{abbrv}
 %\scriptsize
-%\fontsize{8.8pt}{9.9pt} \selectfont
+\fontsize{8.8pt}{9.9pt} \selectfont
 \bibliographystyle{abbrv}
 \bibliography{ref} 
 \normalsize \selectfont

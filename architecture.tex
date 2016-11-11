@@ -21,47 +21,53 @@ Although developers may directly implement detector generators as described in S
 
 For this reason, \detectlib employs a modular approach that automatically performs the latter threshold tuning task so that developers can focus on feature engineering.   Developers simply define featurization functions that map records into a numerical feature vector; for each featurizer, \detectlib executes it and performs outlier detection to select the combination of features and thresholds that will identify the outliers.  
 
-We considered a number of outlier detection algorithms to use.  A recently popular approach is a robust estimator of the sample population variance called Minimum Covariance Determinant~\cite{} (MCD), which has been used in systems such as MacroBase~\cite{bailis2016macrobase}.  The key limitation is that the technique is computationally expensive and can have degenerate results (due to rank-deficient covariance matrices).
+We considered a number of outlier detection algorithms to use.  A recently popular approach is a robust estimator of the sample population variance called Minimum Covariance Determinant~\cite{rousseeuw2011robust} (MCD), which has been used in systems such as MacroBase~\cite{bailis2016macrobase}.  The key limitation is that the technique is computationally expensive and can have degenerate results (due to rank-deficient covariance matrices).
 
 We instead use a variant of Random Forest classification, called Isolation Forests~\cite{liu2008isolation}.  The Isolation Forest is inspired by the observation that outliers are more easily separable from the rest of the dataset than non-outliers.  It grows a forest of isolation trees, where each tree is randomly grown---it selects a random attribute and a random threshold value---until a leaf node contains a single record.  The length of the path to the leaf node is a measure for the outlier-ness of the record---a shorter path more strongly suggests that the record is an outlier.  The isolation forest creates a large set of isolation trees and classifies records with short average path length as outliers.  In contrast to computational expensive algorithms such as MCD, Isolation Forests have a linear time complexity and very small memory requirements.  
 
 A nice property of the technique is that the resulting forest can be simplified and efficiently compiled into simple threshold rules. 
 For example, if a featurizer extracts a scalar feature in $\mathbb{R}$ (e.g., $n\_emp$), the Isolation Forest will generate a single-attribute threshold rule (e.g., $n\_emp > 2$).  
  We experimented with alternative outlier detection techniques (e.g., Minimum Covariance Determinant) but found that the Isolation Forest provided the best trade-off between runtime and accuracy.
+ 
+\stitle{Hyper-parameters: } The Isolation Forest has a few hyper-parameters that need to be tuned, namely, the maximum branch length and a threshold that determines outlier v.s. not outlier. As much as possible, we have tuned these hyper-parameters generically with sensible defaults. Experimentally, we find that performance does not suffer too much with the default parameters.
+In one of our experiments, we used a single hyper-parameter setting across all datasets and evaluate accuracy. 
+ 
+\stitle{False Positive and False Negatives: } In general, a predicate learned from data will have false positives and false negatives.
+This is why the boosting selection is important.
+If a predicate is too uncertain and applies the repair to many spurious records, then it will reduce classification accuracy.
+By boosting, we can protect the system against uncertain detectors.
 
 \subsubsection{Pre-populated Featurizers}
+\noindent We have implemented four classes of featurizers:
 
-We have implemented four classes of featurizers:
-
-\ewu{We will want to address how \sys deals with detectors that have false negatives and/or false positives}
-
-\stitle{Numerical Attributes: } This featurizer projects the numerical attributes into a feature vector.  We find that this is effective at identifying numerical outliers that are statistically different from the rest of the data. For example, the sensor dataset has sensor readings on the order of $300$ celsius when typical readings are $17C$ (Section \ref{exp:comp}).
+\stitle{Numerical Attributes: } This featurizer projects the numerical attributes into a feature vector.  We find that this is effective at identifying numerical outliers that are statistically different from the rest of the data. For example, the sensor dataset has sensor readings on the order of $300C$ when typical readings are $17C$ (Section \ref{exp:comp}).
 
 \stitle{Missing Values: }  We manually enumerated a set of regular expression patterns that commonly describe missing values in a database.  These include \textsf{NULL} attribute values; patterns such as empty string, NaN, Inf; or values whose string representations lack alphanumeric characters. Each pattern corresponds to a boolean feature in the extracted feature vector.   Although this is a hand-curated list, it is easily extensible and is effective at identifying missing values. 11 out of the 13 experimental datasets, had some form of missing value error.
 
-\stitle{Parsing/Type Errors: } We use each attribute's type signature to check whether an attribute value matches the type signature.  For numerical attributes, the featurizer outputs whether the entry can be parsed into a floating point number or an integer. For dates and address types, we check whether common components (e.g., Month, Day, Year for dates, Street, City for addresses) are found using common date and address parsing libraries.   This means that the entry has a minimum of the required components (Month, Day, Year) or (Street, City, State).  This is implemented with standard python libraries: \textsf{usaddress} and \textsf{datetime}. The FEC dataset had a small number of rows with the wrong number of columns, leading to data type errors.
+\stitle{Parsing/Type Errors: } We use each attribute's type signature to check whether an attribute value matches the type signature.  For numerical attributes, the featurizer outputs whether the entry can be parsed into a floating point number or an integer. For dates and address types, we check whether common components (e.g., Month, Day, Year for dates, Street, City for addresses) are found using common date and address parsing libraries.   This means that the entry has a minimum of the required components (Month, Day, Year) or (Street, City, State).  This is implemented with standard python libraries: \textsf{usaddress} and \textsf{datetime}. The FEC dataset had a small number of rows with the wrong number of columns, leading to data type errors. 
+We have a ``short-circuit'' routine for featurizers to declare an attribute an instant failure without passing it into \detectlib.
 
 \stitle{Text Errors using Word Embeddings: }
-Although the above featurizers are effective for quantitative attributes, many datasets contain text attributes that are not amenable to the above approaches.  Also, naively featurizing text attributes using, e.g., hot-one encoding, can easily increase the dimensionality of the dataset to tens of thousands or millions of dimensions---even a two-attribute relation with one numerical and one string-valued attribute, may have thousands of features.  The statistical power of outlier detection techniques rapidly diminishes in the high-dimensional feature-spaces.
+Although the above featurizers are effective for quantitative attributes, many datasets contain string-valued and categorial attributes that are not amenable to the above approaches.  Also, naively featurizing text attributes using, e.g., hot-one encoding, can easily increase the dimensionality of the dataset to tens of thousands or millions of dimensions---even a two-attribute relation with one numerical and one string-valued attribute, may have thousands of features.  The statistical power of outlier detection techniques rapidly diminishes in the high-dimensional feature-spaces.
 
-In response, we borrow the recent concept of text embeddings to featurize text values into a lower-dimensional vector-space.  Specifically, we use the popular \textsf{word2vec} model~\cite{mikolov2013distributed}, which is a word embedding that can be trained on a corpus of text documents to customize its similarity measure for a given dataset.  For our purposes, we model each record as a document, where each attribute value is a ``word''.  Thus, each attribute value is mapped to a vector, and each record is the concatenation of its attributes' vectors.  The isolation forest then takes this vector as input to generate an appropriate predicate.  In our experiments, we find that this simple approach is effective at detecting violating patterns. This detects records whose attributes do not typically occur together. 
-\reminder{sk will add more} \ewu{I think you should clarify what ``training'' the word2vec means and why it matters}
+In response, we borrow the recent concept of text embeddings from Natural Language Processing to featurize record values into a lower-dimensional vector-space.  
+Text embeddings are models trained on a corpus of documents that embed words from the corpus into a vector-space where nearby vectors are similar words.
+This allows one to featurize and evaluate similarity relationships between documents in this vector-space.
 
+We use the popular \textsf{word2vec} model~\cite{mikolov2013distributed}, and adapt its traditional NLP use-case for outlier detection. 
+We treat each record as a document, where each attribute value is a ``word''. 
+The model learns to embed attributes that co-occur in the same records closer in the vector-space.
+Thus, each attribute value is mapped to a vector, and each record is the concatenation of its attributes' vectors.  
+The isolation forest then takes this vector as input to generate an appropriate predicate.  
 
-%One approach is to borrow recent results from Natural Language Processing using Neural Networks to first embed the records in a vector-space and then apply outlier detection techniques. The \textsf{word2vec} model \cite{mikolov2013distributed} is one such approach. Using large amounts of unannotated plain text, \textsf{word2vec} learns relationships between words automatically with a Neural Network that predicts the occurrence of nearby words.  Each word is assigned a vector in the vector space such that words that share common contexts (i.e., occur in the same document) in the corpus are located in close proximity to one another in the space.  This vector space captures semantic relationships between words.
- 
-%We can adapt \textsf{word2vec} for featurizing records in a relation. Each record is treated as a document and each attribute is treated as word.  The model is then trained using all of the records in the training dataset.  Thus, for each attribute value we have a vector.  To featurize a record, we concatenate these vectors together. Therefore, for each record $r$ there is an associated vector $r_v$.  Like the NLP application, this vector space captures semantic relationships between records.  We empirically find that applying the Isolation Forest outlier detection in this space leads to improved results.
+The isolation forest has the crucial property that the anomaly detection criteria are axis-aligned cuts.
+This allows us to identify the components of the vector that are anomalous, and consequently, determine attributes that are erroneous.
+In our experiments, we find that this approach is effective at detecting violating patterns. 
+One common example of a detected error is when a header record (i.e., one specifying the names all the attributes) is included in the dataset.
+The model identifies this record as containing values not typically present in the dataset.
+Similarly, this module detected oddly formatted codes in the FEC dataset.
 
-
-
-
-
-
-
-
-
-
-
+\stitle{User-specified Featurizers: } These featurizers are meant to be an initial set of detectors that can be supplemented by domain specific modules. For example, if the data scientist knows that employee ids in a database must match a particular pattern, she can build featurizers to parse these ids. Similarly, if the data scientist knows something about the structure of the features (e.g., they are time-series), she can add in other features such as frequency components derived from an FFT. All of these featurizers must return a vector and a mapping between vector components and base-data attributes.
 
 
 \iffalse

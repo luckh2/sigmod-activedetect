@@ -34,27 +34,29 @@ Initialize $W^{(1)}_i = \frac{1}{N}$\\
 \label{alg:adaboost}
 \end{algorithm}
 
+To be able to understand Adaboost theoretically, we require an assumption called the \emph{weak learning assumption}. That is, we assume that our weak learner can consistently find classifiers which classify the data correctly at better than random guessing for any weighting of the dataset. 
+
 \subsection{Why Boosting?}
 The key difference from naive feature selection algorithms is that it selects over the space of models rather than the space of features.
 If we have repair operations that cannot simply be represented as columnar operations (e.g., removing a record), this is a preferred solution.
 Similarly, it makes few assumptions about how the attributes are aggregated into a model.
 
 In our problem, each of the library elements will define a weak learner.
-Given the dataset $R$, we can apply $l \in \mathcal{L}$ and then train the classifier to return $C_l$. 
+Given the dataset $R$, we can apply $L \in \mathcal{L}$ and then train the classifier to return $C_L$. 
 The weak learners are evaluated on the clean test labels, which dictates weighting.
 Modeling the selecting process as a statistical boosting allows us to make relatively few assumptions about the classifier and the data cleaning operations. 
 Instead of having to reason about composing different data cleaning operations (and how compositions may affect accuracy), we are reasoning about a weighted consensus of classifiers trained with different data cleaning approaches.
 
-\subsection{Repair Selection Algorithm}\label{s:boostalg}
+\subsection{Boost-and-Clean Algorithm}\label{s:boostalg}
 The boosting algorithm weights the dataset depending on mispredictions, focusing future effort on the ensembles current mispredictions.
-In each round, we find the $l \in \mathcal{L}$ that generates the classifier with highest test accuracy on the weighted data.
+In each round, we find the $L \in \mathcal{L}$ that generates the classifier with highest test accuracy on the weighted data.
 After selection, we recalculate the wights.
 Repeat until $B$ cleaning operations are selected, by selecting the operation that performs best with updated weights.
 The result is a new classifier $C_{clean}$ that is derived from the ensemble.
 As before, without loss of generality we present the binary classification case with labels in $\{-1,1\}$.
 
 \begin{algorithm}
-\KwData{(X, Y), $\alpha$}
+\KwData{(X, Y)}
 Initialize $W^{(1)}_i = \frac{1}{N}$\\
 
 $\mathcal{L}$ generates a set of classifiers $\mathcal{C} \{C^{(0)}, C^{(1)},...,C^{(k)}\}$ where $C^{(0)}$ is the base classifier and $C^{(1)},...,C^{(k)}$ are derived from the cleaning operations.\\
@@ -66,7 +68,7 @@ $\mathcal{L}$ generates a set of classifiers $\mathcal{C} \{C^{(0)}, C^{(1)},...
   $W^{(t+1)}_i \propto W^{(t)}_i e^{-\alpha_t y_i C_t(x_i)}$: down-weight correct predictions, up-weight incorrectly predictions.
 }
 \Return $C(x) = \text{sign}(\sum_t^T \alpha_t C_t(x) )$
-\caption{Repair Selection Algorithm}
+\caption{Boost-and-Clean Algorithm}
 \label{alg:rsa}
 \end{algorithm}
 
@@ -77,10 +79,11 @@ The basic runtime of the algorithm is polynomial in both the number of cleaning 
 The time complexity of Boost-and-Clean is $\mathbf{O}(k^2 N_{test} + k N_{train})$, where $k$ is the number of data cleaning operations, $N_{test}$ is the number of test tuples, and $N_{train}$ is the number of training tuples.
 \end{proposition}
 
-Boosting is well-understood statistically, and we can further bound the error on our clean test set (follows from~\cite{schapire2003boosting}):
+Boosting is well-understood statistically, and we can further bound the error on our clean test set (follows from~\cite{schapire2003boosting}). This requires the application of the weak learning assumption which means that for any weighting of the test set, we can find one library component that classifies better than random guessing. 
 
 \begin{proposition}[Error Bound]
-For a budget of $B$ cleaning operations, the error rate of Boost-and-Clean on the test dataset decreases as $\mathbf{O}(e^{-2B})$.
+Assuming that the weak learning assumption holds, for a budget of $B$ cleaning operations, the error rate of Boost-and-Clean on the test dataset decreases as $\mathbf{O}(e^{-2B})$.
 \end{proposition}
+
 
 
